@@ -1,0 +1,26 @@
+{
+    "id": "B3F9BE6F",
+    "path": "~/ShinyApps/Ichnaea MST/code/ichnea_mst_2.0.R",
+    "project_path": "code/ichnea_mst_2.0.R",
+    "type": "r_source",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1749042456408.0,
+    "source_on_save": false,
+    "relative_order": 2,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "2770,4",
+        "scrollLine": "2754"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1749678802,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1749678802237,
+    "read_only": false,
+    "read_only_alternatives": []
+}

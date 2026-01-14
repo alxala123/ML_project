@@ -1,0 +1,7 @@
+{
+    "installOptions": {
+        "installFromRepository": true,
+        "libraryPath": "/home/shinyejecutor/ShinyApps/Ichnaea MST/renv/library/linux-rocky-8.10/R-4.4/x86_64-redhat-linux-gnu",
+        "installDependencies": true
+    }
+}

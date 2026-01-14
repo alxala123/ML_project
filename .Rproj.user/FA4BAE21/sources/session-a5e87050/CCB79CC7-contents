@@ -1,0 +1,397 @@
+library(shiny)
+library(shinydashboard)
+library(shinyjs)
+library(readxl)
+library(ggplot2)
+library(openxlsx)
+library(mc2d)
+library(h2o)                           
+library(caret)
+library(data.table)
+library(pwr)
+library(ggplot2)
+library(shinyBS)
+library(shapviz)
+library(rmarkdown)
+library(officer)
+library(flextable)
+library(data.table)
+library(digest)
+library(haven)
+library(readODS)
+library(dplyr)
+library(tidyr)
+library(DT)
+library(patchwork)
+library(readr)
+library(shinyBS)
+library(shinyalert)
+library(shinyWidgets)
+library(multiROC)
+library(readxl)
+# Función para importar datos desde distintos formatos
+import_data <- function(file_path) {
+  file_extension <- tools::file_ext(file_path)
+  
+  switch(file_extension, 
+         csv  = readr::read_csv(file_path),
+         xlsx = read.xlsx(file_path, sheet = 1),
+         txt  = data.table::fread(file_path),
+         ods  = readODS::read_ods(file_path),
+         dta  = haven::read_dta(file_path),
+         sav  = haven::read_sav(file_path),
+         stop("Unsupported file format")
+  )
+}
+
+# Función para guardar datos en varios formatos
+save_data <- function(data, file_path) {
+  file_extension <- tools::file_ext(file_path)
+  
+  switch(file_extension, 
+         csv  = data.table::fwrite(data, file_path),
+         xlsx = openxlsx::write.xlsx(data, file_path),
+         txt  = data.table::fwrite(data, file_path, sep = "\t"),
+         ods  = readODS::write_ods(data, file_path),
+         dta  = haven::write_dta(data, file_path),
+         sav  = haven::write_sav(data, file_path),
+         stop("Unsupported file format")
+  )
+}
+
+
+generate_report <- function(metadata, augmented_data, predictions, simulated_data, 
+                            training_summary, learning_curve, variable_importance, 
+                            shap_training, shap_validation, ratios) {
+  # Usar ruta absoluta a partir del directorio de trabajo actual
+  report_template <- file.path(getwd(), "Informe.Rmd")
+  
+  if (!file.exists(report_template)) {
+    stop("El archivo Informe.Rmd no se encontró en la ruta: ", report_template)
+  }
+  
+  output_file <- tempfile(fileext = ".pdf")  # Archivo temporal para la salida
+  
+  tryCatch({
+    rmarkdown::render(
+      input = report_template,
+      output_file = output_file,
+      params = list(
+        metadata = metadata,
+        augmented_data = augmented_data,
+        predictions = predictions,
+        simulated_data = simulated_data,
+        training_summary = training_summary,
+        learning_curve = learning_curve,
+        variable_importance = variable_importance,
+        shap_training = shap_training,
+        shap_validation = shap_validation,
+        ratios = ratios
+      ),
+      envir = new.env(parent = globalenv())
+    )
+  }, error = function(e) {
+    stop("Error al generar el informe: ", e$message)
+  })
+  
+  return(output_file)
+}
+
+# This part is for the dilution using the two 'dilution' markers
+dilution<-function(replicas, todilute, data){
+  # Extract the first three rows and all columns except the first from 'data', and assign to 'metadata'
+  data[c(1, 2, 3), -1]->metadata
+  data<-data[c(-1, -2, -3), ]
+  row.names(data)<-NULL
+  
+  # Identify column names in 'metadata' where the first row contains the value 1, and assign to 'quantitatives'
+  quantitatives<-names(metadata[, grep(1, metadata[1, ])])
+  
+  # Identify column names in 'metadata' where the first row contains the value 0, and assign to 'qualitatives'
+  qualitatives<-names(metadata[, grep(0, metadata[1, ])])
+  
+  # Extract origin and target densities from 'todilute'
+  origin_d<-todilute[, grep(0, todilute[1, ])]
+  target_d<-todilute[, grep(1, todilute[1, ])]
+  
+  origin_d[-c(1, 2)]->origin_density
+  target_d[-c(1, 2)]->target_density
+  origin_d[2]->dl.origin_d
+  target_d[2]->dl.target_d
+  
+  as.data.frame(na.omit(origin_d[-c(1, 2)]))->origin_dd
+  as.data.frame(na.omit(target_d[-c(1, 2)]))->target_dd
+  names(origin_dd)<-c(names(todilute)[grep(0, todilute[1, ])])
+  names(target_dd)<-names(todilute)[grep(1, todilute[1, ])]
+  
+  # Sampling and dilution
+  n.seq<-replicas
+  data2<-data
+  
+  density(na.omit(origin_density), bw='SJ', from=min(na.omit(origin_density)), to=max(na.omit(origin_density)))->densidad_0
+  density(na.omit(target_density), bw='SJ', from=min(na.omit(target_density)), to=max(na.omit(target_density)))->densidad_1
+  
+  library(mc2d)
+  mcstoc(rempiricalD, values=densidad_0$x, prob=densidad_0$y, nsv=replicas, rtrunc=T, linf=0)->target_0
+  mcstoc(rempiricalD, values=densidad_1$x, prob=densidad_1$y, nsv=replicas, rtrunc=T, linf=0)->target_1
+  
+  diluted<-as.numeric((target_1/target_0))
+  dilution.fraction<-sample(diluted, 1)
+  
+  data[, quantitatives]->df1
+  data[, qualitatives]->df2
+  
+  # Define variables origin and target, this last will be used to validate the simulation of the dilution process
+  as.numeric(unlist(origin_dd))->origin_ddd
+  as.numeric(unlist(target_dd))->target_ddd
+  data$Class->df0
+  
+  # Initialize temporary data frames for quantitative, qualitative and target and origin variables
+  if (length(quantitatives)!=0){
+    matrix(nrow=1, ncol=length(quantitatives))->df1.temp
+    matrix(nrow=1, ncol=1)->origin_d.temp
+    matrix(nrow=1, ncol=1)->target_d.temp
+    as.data.frame(df1.temp)->df1.temp
+    as.data.frame(origin_d.temp)->origin_d.temp
+    as.data.frame(target_d.temp)->target_d.temp
+    names(df1.temp)<-names(df1)
+    names(origin_d.temp)<-names(origin_d)
+    names(target_d.temp)<-names(target_d)
+  }
+  
+  if (length(quantitatives)!=0){
+    matrix(nrow=1, ncol=length(qualitatives))->df2.temp
+    matrix(nrow=1, ncol=1)->origin_d.temp
+    matrix(nrow=1, ncol=1)->target_d.temp 
+    as.data.frame(df2.temp)->df2.temp
+    as.data.frame(origin_d.temp)->origin_d.temp
+    as.data.frame(target_d.temp)->target_d.temp
+    names(df2.temp)<-names(df2)
+    names(origin_d.temp)<-names(origin_d)
+    names(target_d.temp)<-names(target_d)
+  }
+  
+  matrix(nrow=1, ncol=1)->df0.temp
+  as.data.frame(df0.temp)->df0.temp
+  
+  # Perform dilution for the specified number of replicas
+  for (i in seq(1, n.seq, 1)) {
+    if (length(quantitatives)!=0){data[, quantitatives]->df1}
+    if (length(qualitatives)!=0){data[, qualitatives]->df2}
+    data$Class->df0
+    
+    if (length(quantitatives)!=0){
+      row.n<-sample(nrow(df1), 1)
+      row.n1<-sample(nrow(as.data.frame(origin_dd)), 1)
+      row.n2<-sample(nrow(as.data.frame(target_dd)), 1)
+    }
+    
+    if (length(qualitatives)!=0){
+      row.n<-sample(nrow(df2), 1)
+      row.n1<-sample(nrow(as.data.frame(origin_dd)), 1)
+      row.n2<-sample(nrow(as.data.frame(target_dd)), 1)
+    }
+    
+    if (length(quantitatives)!=0){
+      for (t in 1:length(quantitatives)){
+        a<-rpois(1, df1[row.n, t])
+        df1.temp[1, t]<-a*dilution.fraction
+      }
+      a1<-rpois(1, origin_dd[row.n1, ])
+      a2<-rpois(1, target_dd[row.n2, ])
+      origin_d.temp[1]<-a1*dilution.fraction
+      target_d.temp[1]<-a2*dilution.fraction
+    }
+    
+    if (length(qualitatives)!=0){
+      for (t in 1:length(qualitatives)){
+        a<-df2[row.n, t]
+        df2.temp[1, t]<-a*dilution.fraction
+      }
+      a1<-rpois(1, origin_dd[row.n1, ])
+      a2<-rpois(1, target_dd[row.n2, ])
+      origin_d.temp[1]<-a1*dilution.fraction
+      target_d.temp[1]<-a2*dilution.fraction
+    }
+    
+    df0.temp<-df0[row.n]
+    if (length(qualitatives)==0){cbind(df0.temp, df1.temp)->data.temp}
+    if (length(quantitatives)==0){cbind(df0.temp, df2.temp)->data.temp}
+    if (length(quantitatives)!=0 & length(qualitatives)!=0) {cbind(df0.temp, df1.temp, df2.temp)->data.temp}
+    names(data.temp)<-c('Class', names(data.temp[, -1]))
+    rbind(data2, data.temp)->data2
+    c(origin_ddd, as.numeric(origin_d.temp))->origin_ddd
+    c(target_ddd, as.numeric(target_d.temp))->target_ddd
+  }
+  
+  as.data.frame(origin_ddd)->origin_ddd
+  as.data.frame(target_ddd)->target_ddd
+  names(origin_ddd)<-names(origin_dd)
+  names(target_ddd)<-names(origin_dd)
+  
+  # Recodification according to detection limit
+  if (length(quantitatives)!=0){
+    data2[quantitatives]->data2.q
+    metadata[quantitatives]->metadata.q
+  }
+  if (length(qualitatives)!=0){
+    data2[qualitatives]->data2.ql
+    metadata[qualitatives]->metadata.ql
+  }
+  if (length(quantitatives)!=0){
+    for(i in 1:length(names(data2.q))){
+      data2.q[, i][data2.q[, i]<=metadata.q[2, i]]<-0
+    }
+    origin_ddd[origin_ddd<=dl.origin_d]<-0
+    target_ddd[target_ddd<=dl.target_d]<-0
+  }
+  
+  if (length(qualitatives)!=0){
+    for(i in 1:length(names(data2.ql))){
+      data2.ql[, i][data2.ql[, i]<=metadata.ql[2, i]]<-0
+      data2.ql[, i][data2.ql[, i]!=0]<-1
+    }
+    origin_ddd[origin_ddd<=dl.origin_d]<-0
+    target_ddd[target_ddd<=dl.target_d]<-0
+  }
+  
+  # Combination fo the variables 
+  if (length(qualitatives)==0){data3<-cbind(data2$Class, data2.q)}
+  if (length(quantitatives)==0){data3<-cbind(data2$Class, data2.ql)}
+  if (length(quantitatives)!=0 & length(qualitatives)!=0) {data3<-cbind(data2$Class, data2.q, data2.ql)}
+  names(data3)<-c('Class', names(data3[, -1]))
+  return(list(data3, origin_ddd, target_ddd))
+}
+
+
+# This part is for dilution as is indicated by the user 
+dilution.m<-function(replicas, data, dilution.fold){
+  # Extract the first three rows and all columns except the first from 'data', and assign to 'metadata'
+  data[c(1, 2, 3), -1]->metadata
+  data<-data[c(-1, -2, -3), ]
+  row.names(data)<-NULL
+  
+  # Identify column names in 'metadata' where the first row contains the value 1, and assign to 'quantitatives'
+  quantitatives<-names(metadata[, grep(1, metadata[1, ])])
+  
+  # Identify column names in 'metadata' where the first row contains the value 0, and assign to 'qualitatives'
+  qualitatives<-names(metadata[, grep(0, metadata[1, ])])
+  
+  # Sampling and dilution
+  n.seq<-replicas
+  data2<-data
+  diluted<-1/runif(replicas, 1, as.numeric(dilution.fold))
+  dilution.fraction<-sample(diluted, 1)
+  data[, quantitatives]->df1
+  data[, qualitatives]->df2
+  data$Class->df0
+  
+  # Initialize temporary data frames for quantitative and qualitative columns
+  if (length(quantitatives)!=0){
+    matrix(nrow=1, ncol=length(quantitatives))->df1.temp
+    as.data.frame(df1.temp)->df1.temp
+    names(df1.temp)<-names(df1)
+  }
+  if (length(qualitatives)!=0){
+    matrix(nrow=1, ncol=length(qualitatives))->df2.temp
+    as.data.frame(df2.temp)->df2.temp
+    names(df2.temp)<-names(df2)
+  }
+  matrix(nrow=1, ncol=1)->df0.temp
+  as.data.frame(df0.temp)->df0.temp
+  
+  
+  # Perform dilution for the specified number of replicas
+  for (i in seq(1, n.seq, 1)) {
+    if (length(quantitatives)!=0){data[, quantitatives]->df1}
+    if (length(qualitatives)!=0){data[, qualitatives]->df2}
+    data$Class->df0
+    if (length(quantitatives)!=0){row.n<-sample(nrow(df1), 1)}
+    if (length(qualitatives)!=0){row.n<-sample(nrow(df2), 1)}
+    
+    if (length(quantitatives)!=0){
+      for (t in 1:length(quantitatives)){
+        a<-rpois(1, df1[row.n, t])
+        df1.temp[1, t]<-a*dilution.fraction
+      }
+    }
+    if (length(qualitatives)!=0){
+      for (t in 1:length(qualitatives)){
+        a<-df2[row.n, t]
+        df2.temp[1, t]<-a*dilution.fraction
+      }
+    }
+    df0.temp<-df0[row.n]
+    if (length(qualitatives)==0){cbind(df0.temp, df1.temp)->data.temp}
+    if (length(quantitatives)==0){cbind(df0.temp, df2.temp)->data.temp}
+    if (length(quantitatives)!=0 & length(qualitatives)!=0) {cbind(df0.temp, df1.temp, df2.temp)->data.temp}
+    names(data.temp)<-c('Class', names(data.temp[, -1]))
+    data2 <- rbind(data2, data.temp)
+  }
+  
+  # Recodification according to detection limit
+  if (length(quantitatives)!=0){
+    data2[quantitatives]->data2.q
+    metadata[quantitatives]->metadata.q
+  }
+  if (length(qualitatives)!=0){
+    data2[qualitatives]->data2.ql
+    metadata[qualitatives]->metadata.ql
+  }
+  if (length(quantitatives)!=0){
+    for(i in 1:length(names(data2.q))){
+      data2.q[, i][data2.q[, i]<=metadata.q[2, i]]<-0
+    }
+  }
+  if (length(qualitatives)!=0){
+    for(i in 1:length(names(data2.ql))){
+      data2.ql[, i][data2.ql[, i]<=metadata.ql[2, i]]<-0
+      data2.ql[, i][data2.ql[, i]!=0]<-1
+    }
+  }
+  # Combination of the variables
+  if (length(qualitatives)==0){data3<-cbind(data2$Class, data2.q)}
+  if (length(quantitatives)==0){data3<-cbind(data2$Class, data2.ql)}
+  if (length(quantitatives)!=0 & length(qualitatives)!=0) {data3<-cbind(data2$Class, data2.q, data2.ql)}
+  names(data3)<-c('Class', names(data3[, -1]))
+  return(data3)
+}
+
+LOD_detection <- function(thresholds_df, classify) {
+  # Encontrar variables (marcadores) comunes entre ambos data.frames
+  common_vars <- intersect(colnames(thresholds_df), colnames(classify))
+  
+  # Si no hay variables comunes, devolver un resultado vacío con una advertencia
+  if (length(common_vars) == 0) {
+    warning("No se encontraron marcadores en común entre los datos y los umbrales LOD.")
+    return(data.frame(ID = classify[[1]], LOD = rep(NA, nrow(classify)), Zeros = rep(NA, nrow(classify))))
+  }
+  
+  # Convertir a numérico solo las columnas comunes para la comparación
+  classify_numeric <- as.data.frame(lapply(classify[common_vars], as.numeric))
+  thresholds_numeric <- as.numeric(thresholds_df[1, common_vars])
+  
+  # Verificar para cada marcador si el valor está por debajo de su umbral
+  below_threshold <- mapply(function(col, threshold) {
+    col < threshold
+  }, classify_numeric, thresholds_numeric, SIMPLIFY = FALSE)
+  
+  below_threshold_df <- as.data.frame(below_threshold)
+  
+  # Calcular el porcentaje de marcadores por debajo del umbral por muestra
+  percent_true_per_row <- rowMeans(below_threshold_df, na.rm = TRUE) * 100
+  
+  # Calcular el porcentaje de marcadores con valor cero por muestra
+  percent_zeros_df <- as.data.frame(lapply(classify_numeric, function(col) col == 0))
+  percent_zeros_per_row <- rowMeans(percent_zeros_df, na.rm = TRUE) * 100
+  
+  # Construir el data.frame final con los resultados
+  result <- data.frame(
+    ID = classify[[1]],
+    LOD = percent_true_per_row,
+    Zeros = percent_zeros_per_row
+  )
+  
+  return(result)
+}
+

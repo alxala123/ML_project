@@ -1,0 +1,3128 @@
+main_ui <- tagList(
+  tags$head(
+    tags$title("Ichnaea MST"),
+    tags$link(rel = "icon", type = "image/png", href = "logo_Ichnaea.png")
+  ),
+  dashboardPage(
+    skin = "blue",
+    dashboardHeader(
+      titleWidth = 260,
+      title = tags$span(
+        HTML(
+          '<div style="display:flex; align-items:center;">
+         <img src="logo_Ichnaea.png" height="35px">
+         <span style="
+           font-family:\'Fira Sans\', sans-serif;
+           font-size:22px;
+           font-weight:600;
+           margin-left:12px;
+           color:#1b3e5f;
+         ">Ichnaea MST</span>
+       </div>'
+        )
+      ),
+      tags$li(
+        class = "dropdown",
+        style = "padding-right:20px;"
+      )
+    ),
+    
+    dashboardSidebar(
+      width = 260,
+      tags$style(HTML("
+      /* Sidebar */
+      .skin-black .main-sidebar {
+        background: #007bff !important;
+      }
+      .skin-black .main-sidebar .user-panel {
+        background: #3399ff !important;
+      }
+      .skin-black .sidebar a {
+        color: #fff !important;
+      }
+      .skin-black .sidebar a:hover {
+        background: #0056cc !important;
+        color: #fff !important;
+      }
+      .skin-black .sidebar .active a {
+        background: #003f8a !important;
+        color: #fff !important;
+      }
+
+      /* Content Area */
+      .content-wrapper, .right-side {
+        background: #f8f9fa !important;
+      }
+
+      /* Card Style */
+      .card {
+        background: #fff !important;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      }
+      .card h2, .card h3 {
+        color: #003f8a !important;
+        margin-bottom: 10px;
+      }
+      .card p, .card li {
+        color: #333 !important;
+        line-height: 1.4;
+      }
+
+      /* Buttons */
+      .btn {
+        background: #0056cc !important;
+        color: #fff !important;
+        border: none;
+        border-radius: 6px;
+        padding: 8px 16px;
+      }
+      .btn:hover {
+        background: #004bb5 !important;
+      }
+
+      /* Box Header */
+      .box .box-header {
+        color: #fff !important;
+        background: #007bff !important;
+        border-bottom: 1px solid #0056cc;
+      }
+
+      .modal-content {
+        border-radius: 12px !important;
+        border: none !important;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        margin-top: 15vh !important;
+      }
+
+      .modal-header {
+        background-color: #007bff;
+        color: white !important;
+        border-bottom: none;
+        border-top-left-radius: 12px;
+        border-top-right-radius: 12px;
+      }
+
+      .modal-footer .btn-primary {
+        background-color: #0056cc;
+        border-radius: 6px;
+        border: none;
+      }
+
+      .modal-footer .btn-secondary {
+        background-color: #6c757d;
+        border-radius: 6px;
+        border: none;
+      }
+
+      .modal-footer {
+        border-bottom-left-radius: 12px;
+        border-bottom-right-radius: 12px;
+        border-top: none;
+      }
+
+      /* Login overlay */
+      body.login-locked { overflow: hidden; }
+
+      .login-box {
+        background: rgba(255, 255, 255, 0.95);
+        padding: 40px 30px;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        max-width: 350px;
+        width: 100%;
+        text-align: center;
+      }
+
+      .login-box h3 {
+        margin-bottom: 25px;
+        color: #333;
+      }
+
+      .login-box input {
+        width: 100%;
+        margin-bottom: 15px;
+      }
+
+      .login-box .btn {
+        width: 100%;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        padding: 10px;
+        cursor: pointer;
+      }
+
+      .login-box .btn:hover {
+        background-color: #0056b3;
+      }
+
+      .error-msg {
+        margin-top: 10px;
+        color: red;
+      }
+
+      .logo-img {
+        max-width: 150px;
+        margin-bottom: 20px;
+      }
+      
+    "),
+                 tags$style(HTML("
+  @media (max-width: 768px) {
+    .main-sidebar { display: none !important; }
+    .content-wrapper, .right-side { margin-left: 0 !important; padding: 10px !important; }
+    .main-header .logo { width: 100% !important; text-align: center !important; }
+    .main-header .navbar { margin-left: 0 !important; }
+    .card { padding: 12px !important; margin-bottom: 15px !important; }
+    .card h2, .card h3 { font-size: 18px !important; }
+    .box, .box-header { padding: 10px !important; }
+    .login-box { width: 90% !important; padding: 20px 15px !important; }
+    .logo-img { max-width: 100px !important; }
+    #boxPlotMetadata, #boxPlotAugmented { height: 600px !important; }
+    .dataTables_wrapper { overflow-x: auto; }
+  }
+"))
+      ),
+      
+      sidebarMenu(
+        id = "tabs",
+        menuItem("Home", tabName = "home", icon = icon("home")),
+        menuItem("File Selection", tabName = "file", icon = icon("file")),
+        menuItem("Data Augmentation", tabName = "augmentation", icon = icon("arrow-up")),
+        menuItem("Ratio Calculation", tabName = "ratios", icon = icon("balance-scale")),
+        menuItem("ML Training", tabName = "training", icon = icon("cogs")),
+        menuItem("Prediction", icon = icon("magic"),
+                 menuSubItem("Prediction without T90", tabName = "prediction", icon = icon("angle-right")),
+                 menuSubItem("Prediction with T90", tabName = "simulation", icon = icon("angle-right"))
+        ),
+        menuItem("Report", tabName = "report", icon = icon("file-word"))
+      )
+      
+    ),
+    
+    dashboardBody(
+      useShinyjs(),
+      
+      tags$head(
+        tags$script(HTML("
+        Shiny.addCustomMessageHandler('toggleLoginOverlay', function(show) {
+          var overlay = document.getElementById('login_overlay');
+          if(show) {
+            overlay.style.display = 'flex';
+          } else {
+            overlay.style.display = 'none';
+          }
+        });
+
+        $(document).on('keypress', function(e) {
+          if(e.which == 13) {
+            $('#login_btn').click();
+          }
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+          document.getElementById('login_overlay').style.display = 'flex';
+          document.body.classList.add('login-locked');
+        });
+      ")),
+        
+        tags$style(HTML("
+  html, body {
+    height: 100%;
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+  }
+  .bg-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: url('logo_Ichnaea.png') center center no-repeat;
+    background-size: contain;
+    opacity: 0.15;
+    z-index: -1;
+  }
+  .login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
+  /* Diseño caja login */
+    .login-box {
+      background: white;
+      padding: 2em;
+      border-radius: 8px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.2);
+      max-width: 320px;
+      text-align: center;
+    }
+
+    .login-box .logo-img {
+      max-width: 150px;
+      margin-bottom: 1em;
+    }
+
+    .login-box .btn {
+      margin-top: 1em;
+      width: 100%;
+    }
+
+    .error-msg {
+      margin-top: 1em;
+      color: #d9534f;
+      font-weight: 600;
+    }
+
+    .access-link {
+      display: block;
+      margin-top: 1em;
+      font-size: 0.9em;
+      color: #007bff;
+      text-decoration: underline;
+    }
+
+    .access-link:hover {
+      color: #0056b3;
+    }
+/* Contenedor del loading para alinear texto y spinner */
+    #loading-day-code {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* Texto loading más grande y centrado */
+    #loading-day-code h3 {
+      font-size: 2em;
+      font-weight: 600;
+      color: #444;
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      align-items: center;
+      gap: 0.25em;
+      user-select: none;
+    }
+
+    /* Puntos animados */
+    #loading-day-code h3 .dots::after {
+  content: '';
+  animation: dotsAnim 1s steps(3, end) infinite;
+}
+
+@keyframes dotsAnim {
+  0%   { content: ''; }
+  33%  { content: '.'; }
+  66%  { content: '..'; }
+  100% { content: '...'; }
+}
+
+
+    /* Spinner estilo bootstrap */
+    .spinner-border.spinner {
+      width: 3rem;
+      height: 3rem;
+      border-width: 0.3em;
+      margin-top: 1em;
+      color: #444;
+    }
+  .logo-img {
+    max-width: 150px;
+    margin-bottom: 20px;
+  }
+")),tags$style(HTML("
+  .access-link {
+    display: inline-block;
+    margin-top: 10px;
+    font-size: 13px;
+    color: #007bff;
+    text-decoration: none;
+    transition: color 0.3s ease;
+  }
+
+  .access-link:hover {
+    color: #000000;
+    text-decoration: none;
+  }
+  
+  /* Header principal fondo blanco */
+  .skin-blue .main-header {
+    background-color: white !important;
+    border-bottom: 1px solid #ddd;
+  }
+  .skin-blue .main-header .logo {
+    background-color: white !important;
+    color: #1b3e5f !important;
+    border-right: 1px solid #ddd;
+  }
+  .skin-blue .main-header .navbar {
+    background-color: white !important;
+    border-bottom: none;
+    color: #1b3e5f !important;
+  }
+  /* Botón hamburguesa siempre azul */
+  .skin-blue .main-header .sidebar-toggle {
+    color: #007bff !important;
+    border: none !important;
+    background: transparent !important;
+  }
+  .skin-blue .main-header .sidebar-toggle:hover,
+  .skin-blue .main-header .sidebar-toggle:focus,
+  .skin-blue .main-header .sidebar-toggle:active {
+    color: #007bff !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+"),tags$script(HTML("
+  $(document).on('shiny:connected', function() {
+    if ($(window).width() <= 768) {
+      $('body').addClass('sidebar-collapse');
+    }
+  });
+"))
+               
+)
+      ),
+
+useShinyjs(),
+tags$div(
+  id = "login_overlay",
+  style = "
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: white;
+      z-index: 9999;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    ",
+  
+  div(class = "bg-image"),  # Fondo semitransparente
+  
+  div(class = "login-container",
+      
+      # Spinner mientras carga
+      tags$div(id = "loading-day-code",
+               tags$h3("Loading software", tags$span(class = "dots")),
+               tags$div(class = "spinner-border spinner", role = "status")),
+      
+      # Caja login oculta inicialmente
+      hidden(
+        div(id = "login-box", class = "login-box",
+            img(src = "logo_Ichnaea.png", class = "logo-img"),
+            div(class = "form-group shiny-input-container",
+                tags$label("Day Code"),
+                textOutput("codigo_dia")
+            ),
+            passwordInput("password", "Password", ""),
+            actionButton("login_btn", "Enter", class = "btn btn-primary"),
+            tags$br(),
+            tags$a(
+              href = paste0(
+                "mailto:ablanch@ub.edu,alejandrodriguez@ub.edu,jmendez@ub.edu,amonleong@ub.edu",
+                "?subject=Access%20Request%20to%20Ichnaea-MST%20Module",
+                "&body=Dear%20Team%2C%0A%0AI%20would%20like%20to%20request%20access%20to%20the%20Ichnaea-MST%20application.%0A%0APurpose%3A%20%5BPlease%20specify%20your%20purpose%20here%5D%0ARequested%20duration%3A%20%5BNumber%20of%20days%5D%0A%0AThank%20you%20for%20considering%20my%20request.%0A%0ABest%20regards%2C%0A%5BYour%20Name%5D"
+              ),
+              class = "access-link",
+              target = "_blank",
+              "Request access"
+            )
+            ,
+            uiOutput("error_msg")
+        )
+      )
+  )
+)
+,
+tabItems(
+  tabItem(tabName = "home",
+          fluidRow(
+            column(width = 12,
+                   div(class="card",
+                       tags$h2("Welcome to the Ichnaea-MST Training and Classification Module"),
+                       tags$p("This module supports training of a self-learning model powered by H2O.ai, enabling you to create, save, and classify user-provided samples, based on microbial substracking (MST) parameters."),
+                       tags$p("An enhanced feature simulates natural sample decay and its impact on classification results."),
+                       tags$p("Review the help tutorials for a smooth experience. If you already have a trained model, proceed to the Upload and Classification Module. Regular process:"),
+                       tags$ol(
+                         tags$li("Training file selection"),
+                         tags$li("Data Augmentation: based on your training data Ichnaea MST will randomly increase potential new observations."),
+                         tags$li("Ratio calculation: in case you are interested in create you own ratio."),
+                         tags$li("Machine learning"),
+                         tags$li("Prediction samples: based on the developed models."),
+                         tags$li("Simulate natural decay")
+                       )
+                   ) 
+            )
+          )
+  ),
+  tabItem(
+    tabName = "file",
+    fluidRow(
+      column(
+        width = 4,
+        div(
+          class = "card",
+          tags$h3(icon("file"), " File Selection"),
+          fileInput("archivo", "Select Training File:", accept = c(".xlsx", ".csv")),
+          actionButton("loadMetadata", "Load Data", class = "btn"),
+        )
+      )
+    ),
+    fluidRow(
+      column(
+        width = 12,
+        div(
+          class = "card",
+          tags$h3(icon("table"), " Preview of the Training data"),
+          DT::DTOutput("metadataPreview")
+        )
+      )
+    ),
+    fluidRow(
+      column(
+        width = 12,
+        div(
+          class = "card",
+          tags$h3(icon("chart-bar"), "Data Boxplots"),
+          plotOutput("boxPlotMetadata", height = "2000px")
+          
+        )
+      )
+    )
+  ),
+  # Data Augmentation
+  tabItem(tabName = "augmentation",
+          fluidRow(
+            column(width = 4,
+                   div(class="card",
+                       tags$h3(icon("arrow-up"), " Data Augmentation"),
+                       selectInput("augmentationType", "Augmentation Type", choices = c("Based on occurences "="fixed","Choose a threshold"="random")),
+                       conditionalPanel(
+                         condition = "input.augmentationType == 'fixed'",
+                         fileInput("augmentFile", "Select File for Augmentation", accept = c(".xlsx", ".csv"))
+                       ),
+                       actionButton("augmentData", "Generate Data", class="btn")
+                   )
+            ),
+            column(width = 12,
+                   div(class="card",
+                       tags$h3(icon("table"), " Augmented Data Preview"),
+                       DT::DTOutput("AugmentedPreview"),
+                       br(),
+                       downloadButton("download_augmented", "Download Augmented data", class = "btn-primary")
+                   )
+            ),
+            column(width = 12,
+                   div(class="card",
+                       tags$h3(icon("chart-bar"), " Augmented Data Boxplots"),
+                       plotOutput("boxPlotAugmented", height = "2000px")
+                   )
+            )
+          )
+  ),
+  # UI - Training
+  tabItem(tabName = "training",
+          fluidRow(
+            column(width = 6,
+                   div(class = "card",
+                       tags$h3(icon("cogs"), " Model Setup"),
+                       conditionalPanel(
+                         condition = "output.noAugmentedData",
+                         tags$div(
+                           tags$h4(icon("upload"), " Upload Data (if you skipped previous steps)"),
+                           fileInput("customTrainingData", "Upload your data for training:", accept = c(".csv", ".xlsx"))
+                         )
+                       ),
+                       br(),
+                       # Mostrar carga modelo solo si usuario dijo YES
+                       conditionalPanel(
+                         condition = "output.showPretrainedModelUI == true",
+                         tags$h4(icon("upload"), " Load Pre-trained Model"),
+                         fileInput("uploadModel", "Upload Model:"),
+                         actionButton("loadModelBtn", "Load Model", class = "btn btn-success"),
+                         textOutput("modelStatus"),
+                         tags$hr()
+                       )
+                       ,
+                       
+                       # Mostrar config entrenamiento por defecto, ocultar si dijo YES
+                       conditionalPanel(
+                         condition = "output.showPretrainedModelUI == false",
+                         tags$h4(icon("sliders-h"), " Configure Training"),
+                         selectInput("algoChoice", "Algorithms:", choices = list(
+                           "DRF (Random Forest)" = "DRF",
+                           "GLM (Generalized Linear Model)" = "GLM",
+                           "XGBoost" = "XGBoost",
+                           "GBM (Gradient Boosting Machine)" = "GBM",
+                           "Deep Learning" = "DeepLearning",
+                           "Stacked Ensemble" = "StackedEnsemble",
+                           "All Algorithms" = "ALL"
+                         ), selected = "GBM"),
+                         actionButton("trainModel", "Train", class = "btn"),
+                         downloadButton("downloadModel", "Download Model")
+                       )
+                   )
+            )
+            ,
+            column(width = 6,
+                   div(class = "card",
+                       tags$h3(icon("table"), " Model Summary"),
+                       tabsetPanel(
+                         tabPanel("Full Model", verbatimTextOutput("modelSummary")),
+                         tabPanel("Reduced Model (Infogram)", verbatimTextOutput("modelSummary_reduced"))
+                       )
+                   )
+                   
+            )
+          ),
+          fluidRow(
+            column(width = 6,
+                   div(class = "card",
+                       tags$h3(icon("chart-line"), " Learning Curve"),
+                       tabsetPanel(
+                         tabPanel("Full Models", plotOutput("learningCurve_full")),
+                         tabPanel("Reduced Models (Infogram)", plotOutput("learningCurve_reduced"))
+                       ),
+                       downloadButton("downloadLearningCurve", "Download", class = "btn btn-default")
+                   )
+            ),
+            column(width = 6,
+                   div(class = "card",
+                       tags$h3(icon("chart-area"), " Variable Importance"),
+                       tabsetPanel(
+                         tabPanel("Full Models", plotOutput("variableImportance_full")),
+                         tabPanel("Reduced Models (Infogram)", plotOutput("variableImportance_reduced"))
+                       ),
+                       downloadButton("downloadVariableImportance", "Download", class = "btn btn-default")
+                   )
+            )
+          ),
+          fluidRow(
+            column(width = 6,
+                   div(class = "card",
+                       tags$h3(icon("project-diagram"), " SHAP Summary Plots (per class vs. favorable)"),
+                       tabsetPanel(
+                         tabPanel("Full Models", uiOutput("shapPlotsUI")),
+                         tabPanel("Reduced Models (Infogram)", uiOutput("shapPlotsUI_reduced"))
+                       )
+                   )
+                   
+            ), 
+            column(
+              width = 6,
+              div(
+                class = "card",
+                tags$h3(icon("chart-line"), "ROC Curves and AUC Metrics"),
+                tabsetPanel(
+                  tabPanel("Full Models", plotOutput("rocPlot", height = "600px")),
+                  tabPanel("Reduced Models (Infogram)", plotOutput("rocPlot_reduced", height = "600px"))
+                )
+              )
+            )
+          )
+  ),
+  
+  # UI - Predicción + Evaluación (Prediction + Evaluation)
+  tabItem(tabName = "prediction",
+          fluidRow(
+            column(width = 4,
+                   div(class="card",
+                       tags$h3(icon("magic"), " Classification"),
+                       fileInput("predictFile", "Select File:", accept=c(".xlsx",".csv")),
+                       actionButton("predictData","Classify", class="btn")
+                   )
+            ),
+            column(width = 8,
+                   div(class="card",
+                       tags$h3(icon("table"), " Predictions"),
+                       DT::DTOutput("predictions"),
+                       downloadButton("downloadPredictions","Download", class="btn btn-default")
+                   )
+            )
+          )
+  )
+  ,
+  
+  # T90 Simulation
+  tabItem(tabName = "simulation",
+          fluidRow(
+            column(width = 4,
+                   div(class = "card",
+                       tags$h3(icon("clock"), " T90 Simulation"),
+                       fileInput("t90File", "Upload T90 File:", accept = c(".xlsx", ".csv")),
+                       actionButton("simulateT90", "Simulate", class = "btn")
+                   )
+            )
+          ),
+          fluidRow(
+            column(width = 12,
+                   div(class = "card",
+                       tags$h3(icon("table"), " Corrected Dataset"),
+                       DT::DTOutput("simulatedData"),
+                       downloadButton("downloadT90Results", "Download Corrected Data", class = "btn btn-default")
+                   )
+            )
+          ),
+          fluidRow(
+            column(width = 12,
+                   div(class = "card",
+                       tags$h3(icon("chart-bar"), " Predictions on Corrected Data"),
+                       DT::DTOutput("predictionsT90"),
+                       downloadButton("downloadPredictionsT90", "Download Predictions", class = "btn btn-default")
+                   )
+            )
+          )
+  )
+  ,
+  
+  # Ratio Calculation
+  tabItem(tabName = "ratios",
+          fluidRow(
+            column(width = 4,
+                   div(class="card",
+                       tags$h3(icon("balance-scale"), " Ratio Calculation"),
+                       selectInput("columnX","Variable X",choices=NULL),
+                       selectInput("columnY","Variable Y",choices=NULL),
+                       actionButton("calculateRatio","Preview ratio",class="btn"),
+                       actionButton("addRatioColumn", "Add new ratio to the data", class="btn btn-success")
+                   )
+            )
+          ),
+          fluidRow(
+            column(width = 12,
+                   div(class="card",
+                       tags$h3(icon("table"), " Ratio Data"),
+                       DT::dataTableOutput("ratioData"),
+                       downloadButton("downloadRatios","Download data with ratios",class="btn btn-default")
+                   )
+            )
+          )
+  ),
+  
+  # Report Generation
+  tabItem(tabName = "report",
+          fluidRow(
+            column(width = 12,
+                   div(class="card",
+                       tags$h3(icon("file-word"), " Generate Report"),
+                       actionButton("generateReport","Generate",class="btn"),
+                       bsTooltip("generateReport","Press to render PDF report.",placement="right",trigger="hover")
+                   )
+            ),
+            column(width = 12,
+                   div(class="card",
+                       tags$h3(icon("eye"), " Preview Report"),
+                       uiOutput("reportPreview"),
+                       downloadButton("downloadReportHTML","Download Report",class="btn btn-default")
+                   )
+            )
+          )
+  )
+)
+    )
+  )
+)
+
+
+
+
+
+server <- function(input, output, session) {
+  
+  # Variables reactivas para almacenar los datos procesados 
+  metadata <- reactiveVal(NULL)
+  augmentedData <- reactiveVal(NULL)
+  predictions <- reactiveVal(NULL)
+  simulatedData <- reactiveVal(NULL)
+  ratiosData <- reactiveVal(NULL)
+  file_popup_shown <- reactiveVal(FALSE)
+  aug_popup_shown <- reactiveVal(FALSE)
+  ml_popup_shown <- reactiveVal(FALSE)
+  prediction_popup_shown <- reactiveVal(FALSE)
+  t90_popup_shown <- reactiveVal(FALSE)
+  model_reduced <- reactiveVal(NULL)
+  ratios_popup_shown <- reactiveVal(FALSE)
+  shap_list_infogram <- reactiveVal()
+  test_data_list_infogram <- reactiveVal()
+  models_list_infogram <- reactiveVal()
+  showPretrainedModelUI <- reactiveVal(FALSE)
+  reduced_predictors <- reactiveVal() 
+  lod_zeros_infogram <- reactiveVal(NULL)
+  
+  
+  passwords_del_dia <- readRDS("passwords_completo_hash.rds")
+  user_logged <- reactiveVal(FALSE)
+  fecha_hoy <- reactive(Sys.Date())
+  
+  # Datos del día
+  codigo_info <- reactive({
+    passwords_del_dia[fecha == fecha_hoy()]
+  })
+  
+  output$codigo_dia <- renderText({
+    info <- tryCatch(codigo_info(), error = function(e) NULL)
+    if (is.null(info) || nrow(info) == 0 || is.null(info$codigo) || is.na(info$codigo)) {
+      return("Loading code...")
+    } else {
+      return(info$codigo)
+    }
+  })
+  
+  # Mostrar spinner o login box según disponibilidad del código
+  observe({
+    info <- tryCatch(codigo_info(), error = function(e) NULL)
+    
+    if (is.null(info) || nrow(info) == 0 || is.null(info$codigo) || is.na(info$codigo)) {
+      shinyjs::show("loading-day-code")
+      shinyjs::hide("login-box")
+    } else {
+      shinyjs::hide("loading-day-code")
+      shinyjs::show("login-box")
+    }
+  })
+  
+  # Mostrar/ocultar overlay
+  observe({
+    if (!user_logged()) {
+      session$sendCustomMessage("toggleLoginOverlay", TRUE)
+      shinyjs::runjs("document.body.classList.add('login-locked');")
+    } else {
+      session$sendCustomMessage("toggleLoginOverlay", FALSE)
+      shinyjs::runjs("document.body.classList.remove('login-locked');")
+    }
+  })
+  
+  # Verificar password
+  observeEvent(input$login_btn, {
+    req(input$password)
+    info <- codigo_info()
+    pass_hash <- digest(input$password, algo = "sha256")
+    
+    if (nrow(info) > 0 && pass_hash == info$password_hash) {
+      user_logged(TRUE)
+      output$error_msg <- renderUI(NULL)
+    } else {
+      output$error_msg <- renderUI(
+        tags$div(
+          style = "margin-top: 1em; padding: 0.8em 1em; background-color: #ffe6e6; color: #a94442;
+             border-left: 5px solid #d9534f; border-radius: 5px; font-weight: 500;",
+          "Wrong password. Please try again."
+        )
+      )
+    }
+  })
+  
+  first_time <- reactiveVal(TRUE)
+  
+  
+  # Observa cuando se selecciona la pestaña 'home'
+  observeEvent(user_logged(), {
+    req(user_logged())
+    
+    if (input$tabs == "home" && first_time()) {
+      first_time(FALSE)
+      
+      shinyalert::shinyalert(
+        title = "Welcome!",
+        text = "Download example files to test the full workflow.",
+        type = "info",
+        showCancelButton = TRUE,
+        cancelButtonText = "Close",
+        confirmButtonText = "📦 Download examples",
+        callbackR = function(x) {
+          if (x) {
+            shinyjs::runjs("window.open('samples_files.zip', '_self')")
+          }
+        }
+      )
+    }
+  })
+  
+  
+  
+  
+  
+  # Mostrar primer modal cuando se entra a la pestaña 'file'
+  observe({
+    if (!is.null(input$tabs) && input$tabs == "file" && !file_popup_shown()) {
+      file_popup_shown(TRUE)
+      
+      showModal(modalDialog(
+        title = "File Module Introduction",
+        HTML("
+    <p>Select the files containing the <strong>training dataset</strong> (samples with <em>MST markers</em> based on the source of contamination) and ensure they are <strong>properly structured</strong>.</p>
+    <p>Decide how to <em>simulate the dilution</em> of these samples.</p>
+    <p>Then, choose the file with the <strong>data of the samples to classify</strong> and indicate if you wish to consider <em>natural degradation</em>.</p>
+    <p><strong>To continue, press 'Next'.</strong></p>
+  "),
+        footer = actionButton("file_intro_next", "Next"),
+        easyClose = FALSE
+      ))
+      
+    }
+  })
+  
+  # Mostrar shinyalert cuando se presiona "Next"
+  observeEvent(input$file_intro_next, {
+    removeModal()  # Cierra el primer modal
+    
+    shinyalert::shinyalert(
+      title = "⚠️ Warning: Data Parameters",
+      text = "Be careful with the parameters in your training dataset. Avoid using variables or features that <strong>won’t be available</strong> or used during prediction, as this can lead to <em>misleading or invalid classification results</em>.",
+      type = "warning",
+      html = TRUE
+    )
+    
+  })
+  
+  
+  observe({
+    if (!is.null(input$tabs) && input$tabs == "augmentation" && !aug_popup_shown()) {
+      aug_popup_shown(TRUE)
+      showModal(modalDialog(
+        title = "Start of Data Augmentation",
+        HTML("
+    <p>To <strong>simulate a dilution process</strong> and increase the number of samples for automatic classification, carefully select your configuration, as this <em>cannot be changed later</em>.</p>
+    <p><strong>To continue, press 'Enter' or click 'OK'.</strong></p>
+  "),
+        footer = modalButton("OK"),
+        easyClose = TRUE
+      ))
+      
+    }
+  })
+  output$noAugmentedData <- reactive({
+    is.null(augmentedData())
+  })
+  outputOptions(output, "noAugmentedData", suspendWhenHidden = FALSE)
+  
+  
+  # Paso 1: Mostrar información general
+  # Modal 1: Información inicial
+  showTrainingDialog1 <- function() {
+    showModal(modalDialog(
+      title = "Training Information",
+      HTML("
+    <p><strong>Ichnaea-MST</strong> offers several training options using different families of <em>machine learning algorithms</em>.</p>
+    <p>The default option is <strong><a href='https://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/gbm.html' target='_blank'>GBM</a></strong>.</p>
+    <p>Additionally, Ichnaea-MST provides an option to <em>reduce MST markers</em>. Later, you will be asked whether you want to perform this optimization using <strong><a href='https://docs.h2o.ai/h2o/latest-stable/h2o-r/docs/reference/h2o.infogram.html' target='_blank'>Infogram</a></strong>.</p>
+  "),
+      footer = actionButton("nextTraining1", "Next"),
+      easyClose = FALSE
+    ))
+    
+  }
+  
+  # Modal 2: Configuración por defecto
+  showTrainingDialog2 <- function() {
+    showModal(modalDialog(
+      title = "Configuration and Recommendations",
+      HTML("
+    <p>Default options for <strong>automatic training</strong> will now be configured.</p>
+    <p><strong>Note:</strong> <em>Deep Learning</em>, <em>XGBoost</em> (Linux only), and <em>Stacked Ensemble</em> require <strong>high computational resources</strong>.</p>
+  "),
+      footer = actionButton("nextTraining2", "Continue"),
+      easyClose = FALSE
+    ))
+    
+  }
+  
+  # Modal 3: Preguntar si ya tiene modelo entrenado
+  showModelOptionDialog <- function() {
+    showModal(modalDialog(
+      title = "Do You Want to Train a New Model?",
+      HTML("
+      <p>If you want to <strong>train a new model from scratch</strong>, click <strong>Yes</strong>.</p>
+      <p>If you already have a model and want to <em>upload and use it</em>, click <strong>No</strong>.</p>
+    "),
+      footer = tagList(
+        actionButton("wantsTrainYes", "Yes"),  # Nuevo entrenamiento
+        actionButton("wantsTrainNo", "No")     # Modelo existente
+      ),
+      easyClose = FALSE
+    ))
+  }
+  observe({
+    if (!is.null(input$tabs) && input$tabs == "training" && !ml_popup_shown()) {
+      ml_popup_shown(TRUE)
+      showTrainingDialog1()
+    }
+  })
+  
+  # Cuando se hace clic en "Next" del paso 1
+  observeEvent(input$nextTraining1, {
+    removeModal()
+    showTrainingDialog2()
+  })
+  
+  # Cuando se hace clic en "Continue" del paso 2
+  observeEvent(input$nextTraining2, {
+    removeModal()
+    showModelOptionDialog()
+  })
+  
+  observeEvent(input$wantsTrainYes, {
+    showPretrainedModelUI(FALSE)  # Muestra UI de entrenamiento
+    removeModal()
+  })
+  
+  observeEvent(input$wantsTrainNo, {
+    showPretrainedModelUI(TRUE)   # Muestra UI de carga modelo
+    removeModal()
+  })
+  
+  output$showPretrainedModelUI <- reactive({
+    showPretrainedModelUI()
+  })
+  outputOptions(output, "showPretrainedModelUI", suspendWhenHidden = FALSE)
+  
+  
+  
+  observe({
+    if (!is.null(input$tabs) && input$tabs == "prediction" && !prediction_popup_shown()) {
+      prediction_popup_shown(TRUE)
+      showModal(modalDialog(
+        title = "Sample Classification",
+        HTML("
+    <p>In the next step, the dataset will be <strong>classified</strong>, showing the <em>expected class</em> and <em>probabilities</em> for all classes.</p>
+    <p>If the expected class differs from the most probable one, use the <strong>most probable class</strong> as the final result.</p>
+    <p><strong>To continue, press 'Enter' or click 'OK'.</strong></p>
+  "),
+        footer = modalButton("OK"),
+        easyClose = TRUE
+      ))
+      
+      
+    }
+  })
+  
+  observe({
+    if (!is.null(input$tabs) && input$tabs == "simulation" && !t90_popup_shown()) {
+      t90_popup_shown(TRUE)
+      showModal(modalDialog(
+        title = "T90 Simulation and Corrections",
+        HTML("
+    <p>A file with corrections based on <strong>T90 values</strong> will be created and saved as a dataset.</p>
+    <p>Select the desired spreadsheet format. If an <em>MST marker depends on another</em>, verify and correct the dataset.</p>
+    <p><strong>You will be able to load these corrections later.</strong></p>
+    <p>To continue, press 'Enter' or click 'OK'.</p>
+  "),
+        footer = modalButton("OK"),
+        easyClose = TRUE
+      ))
+      
+      
+    }
+  })
+  
+  observe({
+    if (!is.null(input$tabs) && input$tabs == "ratios" && !ratios_popup_shown()) {
+      ratios_popup_shown(TRUE)
+      showModal(modalDialog(
+        title = "Ratio Calculation Module",
+        HTML("
+    <p>In this section, you can <strong>calculate the ratio</strong> between two numeric variables in your dataset.</p>
+    <p>Select columns <strong>X</strong> and <strong>Y</strong>, then press <strong>'Calculate'</strong> to compute:</p>
+    <p><code>log10(X + 10) / log10(Y + 10)</code></p>
+    <p><em>Invalid or negative values will be ignored.</em></p>
+    <p>If desired, you can <strong>add this new column</strong> to your dataset for further analysis.</p>
+  "),
+        footer = modalButton("OK"),
+        easyClose = TRUE
+      ))
+      
+      
+    }
+  })
+  
+  observeEvent(input$loadMetadata, {
+    req(input$archivo)
+    
+    tryCatch({
+      
+      raw_data <- import_data(input$archivo$datapath)
+      data_plot <- raw_data[-c(1, 2, 3), ]
+      names(data_plot)[1] <- "Class"
+      quantitatives <- which(sapply(data_plot, is.numeric))
+      
+      df <- cbind(Class = data_plot$Class, data_plot[, quantitatives] + 1)
+      
+      df_log <- df
+      df_log[, -1] <- log10(as.data.frame(lapply(df[, -1], as.numeric)))
+      
+      
+      metadata(df_log)
+      
+      showNotification("File uploaded", type = "message")
+      
+      output$metadataPreview <- DT::renderDT({
+        req(metadata())
+        
+        # Redondear a 2 decimales todas las columnas numéricas
+        df_rounded <- metadata()
+        df_rounded[, -1] <- lapply(df_rounded[, -1], function(x) round(x, 2))
+        
+        DT::datatable(df_rounded,
+                      options = list(
+                        scrollX = TRUE,
+                        pageLength = 10,
+                        lengthMenu = c(10, 25, 50, 100)
+                      ),
+                      rownames = FALSE
+        )
+      })
+      
+      
+      output$boxPlotMetadata <- renderPlot({
+        req(metadata())
+        df <- metadata()
+        df$Class <- factor(df$Class, levels = unique(df$Class))
+        num_cols <- colnames(df)[colnames(df) != "Class"]
+        n_classes <- length(levels(df$Class))
+        colores <- RColorBrewer::brewer.pal(min(n_classes, 8), "Set2")
+        if(n_classes > 8){
+          colores <- colorRampPalette(colores)(n_classes)
+        }
+        plot_list <- lapply(num_cols, function(col) {
+          ggplot(df, aes(x = .data[[col]], y = Class, fill = Class)) +
+            geom_boxplot(outlier.size = 1, alpha = 0.8) +
+            scale_fill_manual(values = colores) +
+            labs(title = paste(col, "by Class"),
+                 x = "Class", y = col) +
+            theme_minimal(base_size = 12) +
+            theme(
+              axis.text.x = element_text(angle = 45, hjust = 1),
+              legend.position = "none",
+              plot.title = element_text(face = "bold", size = 14)
+            )
+        })
+        
+        wrap_plots(plot_list, ncol = 3) + 
+          plot_annotation(
+            theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5))
+          )
+      })
+      
+      shinyalert::shinyalert(
+        title = "📘 Next Step",
+        text = HTML("
+    <p>Once you have <strong>reviewed the data and plots</strong>, you can proceed to the <strong>Data Augmentation</strong> step.</p>
+    <p><em>Make sure all information is correct before continuing.</em></p>
+  "),
+        type = "info",
+        html = TRUE
+      )
+      
+      
+    }, error = function(e) {
+      showNotification(paste("Error uploading the file:", e$message), type = "error")
+    })
+  })
+  
+  
+  
+  # Reactive values para guardar configuraciones temporales
+  aug_settings <- reactiveValues(method = NULL, value = NULL)
+  
+  observeEvent(input$augmentData, {
+    if (input$augmentationType == "fixed") {
+      showModal(modalDialog(
+        title = "🔧 Allowed log10 Difference",
+        div(style = "padding:10px; font-size:16px;",
+            HTML("<p><strong>Set the maximum allowed difference</strong> between the <em>log10 medians</em> of your samples during the augmentation process.</p>"),
+            tags$label("Maximum difference between medians (log10):", style = "color:#333; font-weight:bold;"),
+            numericInput("diffLog10", NULL, value = 0.5, min = 0.01, step = 0.01, width = "100%")
+        ),
+        footer = tagList(
+          tags$button(type = "button", class = "btn btn-secondary", `data-dismiss` = "modal", "Cancel"),
+          actionButton("submitFixed", "Accept", class = "btn btn-primary")
+        ),
+        easyClose = FALSE,
+        size = "m"
+      ))
+    } else {
+      showModal(modalDialog(
+        title = "🧪 Maximum Dilution",
+        div(style = "padding:10px; font-size:16px;",
+            HTML("<p><strong>Define the maximum dilution level</strong> to simulate. For example, <code>10000</code> equals a 4-log dilution.</p>"),
+            tags$label("Maximum dilution:", style = "color:#333; font-weight:bold;"),
+            numericInput("maxDilution", NULL, value = 10000, min = 1, width = "100%")
+        ),
+        footer = tagList(
+          tags$button(type = "button", class = "btn btn-secondary", `data-dismiss` = "modal", "Cancel"),
+          actionButton("submitRandom", "Accept", class = "btn btn-primary")
+        ),
+        easyClose = FALSE,
+        size = "m"
+      ))
+    }
+  })
+  
+  
+  # Paso 2: Ejecutar lógica de augmentación (FIXED)
+  observeEvent(input$submitFixed, {
+    req(input$diffLog10,input$archivo, input$augmentFile)
+    removeModal()
+    
+    withProgress(message = "Generating augmented data...", value = 0, {
+      break.level <- input$diffLog10
+      todilute <- import_data(input$augmentFile$datapath)
+      metadata_val <- import_data(input$archivo$datapath)
+      data_plot <- metadata_val[-c(1, 2, 3), ]
+      names(data_plot)[1] <- "Class"
+      quantitatives <- which(sapply(data_plot, is.numeric))
+      numClasses <- length(unique(na.omit(metadata_val$Class)))
+      replicas <- 1 +
+        as.numeric(pwr::pwr.f2.test(u = numClasses, f2 = 0.02, sig.level = 0.05, power = 0.9)[1]) +
+        as.numeric(pwr::pwr.f2.test(u = numClasses, f2 = 0.02, sig.level = 0.05, power = 0.9)[2])
+      
+      counter <- 0
+      repeat {
+        incProgress(0.1, detail = paste("Attempt:", counter + 1))
+        
+        # Replace foreach %dopar% with sequential lapply
+        results <- lapply(1:5, function(i) {
+          dilution(replicas, todilute, metadata_val)
+        })
+        
+        # Initialize lists to store the results
+        data_list <- list()
+        origin_dd_list <- list()
+        target_dd_list <- list()
+        
+        # Separate the results into the corresponding lists
+        for (i in 1:length(results)) {
+          data_list[[i]] <- results[[i]][[1]]
+          origin_dd_list[[i]] <- results[[i]][[2]]
+          target_dd_list[[i]] <- results[[i]][[3]]
+        }
+        
+        data3_combined <- do.call(rbind, data_list)
+        origin_dd_combined <- do.call(rbind, origin_dd_list)
+        target_dd_combined <- do.call(rbind, target_dd_list)
+        
+        rem.repats<-function(Training, Simulated){
+          length(Training[, 1])-3->longitud
+          remove<-c(seq(replicas+longitud+1, replicas+2*longitud, 1), seq(2*replicas+2*longitud+1, 2*replicas+3*longitud, 1), seq(3*replicas+3*longitud+1, 3*replicas+4*longitud, 1), seq(4*replicas+4*longitud+1, 4*replicas+5*longitud, 1))
+          return(Simulated[-remove, ])
+        }
+        
+        df_aug <- rem.repats(metadata_val, data3_combined)
+        real.target <- as.numeric(na.omit(unlist(todilute[grep(1, todilute[1, ])])))
+        simulated.target <- as.numeric(unlist(origin_dd_combined))
+        
+        max_length <- max(length(real.target), length(simulated.target))
+        real.target <- c(real.target, rep(NA, max_length - length(real.target)))
+        simulated.target <- c(simulated.target, rep(NA, max_length - length(simulated.target)))
+        
+        targets <- data.frame(Real = real.target, Simulated = simulated.target)
+        counter <- counter + 1
+        if (abs(median(log10(targets$Simulated+1)- median(na.omit(log10(targets$Real+1)))))<=break.level) {break}
+        if (counter==10){svDialogs::dlg_message('It was impossible to obtain a valid diference after 10 runs. It will proceed with a dilution ratio. To continue, please press the "Enter" key or click the "OK" button.')$res}
+        if (counter==10) {break}
+      }
+      augmentedData(df_aug)
+      
+    })
+    
+    output$AugmentedPreview <- DT::renderDT({
+      req(augmentedData())
+      
+      # Redondear a 2 decimales todas las columnas numéricas
+      df_rounded <- augmentedData()
+      df_rounded[, -1] <- lapply(df_rounded[, -1], function(x) round(x, 2))
+      
+      DT::datatable(df_rounded,
+                    options = list(
+                      scrollX = TRUE,       # scroll horizontal activado
+                      pageLength = 10,      # filas por página
+                      lengthMenu = c(10, 25, 50, 100)  # opciones de filas a mostrar
+                    ),
+                    rownames = FALSE
+      )
+    })
+    
+    output$boxPlotAugmented <- renderPlot({
+      req(augmentedData(), input$archivo)
+      
+      # Importar y preparar datos originales
+      metadata_val <- import_data(input$archivo$datapath)
+      data_plot <- metadata_val[-c(1, 2, 3), ]
+      names(data_plot)[1] <- "Class"
+      data_plot$Class <- as.factor(data_plot$Class)  # Asegurar que sea factor
+      
+      # Identificar columnas numéricas
+      quantitatives <- which(sapply(data_plot, is.numeric))
+      
+      # Obtener datos aumentados
+      data3 <- augmentedData()
+      data3$Class <- as.factor(data3$Class)  # Asegurar que sea factor
+      
+      # Preparar dataframe para boxplot
+      df <- cbind(Class = data3$Class, data3[quantitatives] + 1)
+      df2 <- log10(df[, -1])
+      df2$Class <- df$Class  # Volver a agregar la columna 'Class'
+      
+      # Obtener nombres de columnas numéricas y número de clases
+      num_cols <- setdiff(names(df2), "Class")
+      classes <- unique(df2$Class)
+      n_classes <- length(classes)
+      
+      # Colores manuales asignados por clase
+      colores_base <- c(
+        "#66c2a5", "#fc8d62", "#8da0cb", "#e78ac3",
+        "#a6d854", "#ffd92f", "#e5c494", "#b3b3b3"
+      )
+      colores <- setNames(colores_base[seq_along(classes)], classes)
+      
+      # Generar boxplots
+      plot_list <- lapply(num_cols, function(col) {
+        ggplot(df2, aes(x = .data[[col]], y = Class, fill = Class)) +
+          geom_boxplot(outlier.size = 1, alpha = 0.8) +
+          scale_fill_manual(values = colores) +
+          labs(title = paste(col, "by Class"),
+               x = col, y = "Class") +
+          theme_minimal(base_size = 12) +
+          theme(
+            axis.text.x = element_text(angle = 45, hjust = 1),
+            legend.position = "none",
+            plot.title = element_text(face = "bold", size = 14)
+          )
+      })
+      
+      # Mostrar los plots juntos
+      wrap_plots(plot_list, ncol = 3) +
+        plot_annotation(
+          theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5))
+        )
+    })
+    shinyalert::shinyalert(
+      title = "🚀 <strong>Next Step</strong>",
+      text = HTML("
+    <p>Once you have reviewed the <strong>augmented data</strong> and <em>boxplots</em>, you can:</p>
+    <ul>
+      <li><strong>Go directly to the <em>Machine Learning</em> step</strong> if you do <u>not</u> wish to perform a dilution ratio calculation.</li>
+      <li>Or, continue to the <strong>'Ratio Calculation'</strong> section if you need to simulate dilution using log10 ratios.</li>
+    </ul>
+    <p style='margin-top:10px;'>Make sure to choose the path that fits your analysis goals.</p>
+  "),
+      type = "info",
+      html = TRUE,
+      confirmButtonText = "Got it!"
+    )
+    
+    
+  })
+  
+  # Paso 2: Ejecutar lógica de augmentación (RANDOM)
+  observeEvent(input$submitRandom, {
+    req(input$maxDilution, metadata())
+    removeModal()
+    
+    withProgress(message = "Generating augmented data...", value = 0, {
+      dilution.fold <- input$maxDilution
+      metadata_val <- import_data(input$archivo$datapath)
+      data_plot <- metadata_val[-c(1, 2, 3), ]
+      names(data_plot)[1] <- "Class"
+      quantitatives <- which(sapply(data_plot, is.numeric))
+      numClasses <- length(unique(na.omit(metadata_val$Class)))
+      replicas <- 1 +
+        as.numeric(pwr::pwr.f2.test(u = numClasses, f2 = 0.02, sig.level = 0.05, power = 0.9)[1]) +
+        as.numeric(pwr::pwr.f2.test(u = numClasses, f2 = 0.02, sig.level = 0.05, power = 0.9)[2])
+      
+      # Replaced foreach %dopar% with sequential lapply
+      df_aug <- do.call(rbind, lapply(1:5, function(i) {
+        dilution.m(replicas, metadata_val, dilution.fold)
+      }))
+      
+      rem.repats <- function(Training, Simulated){
+        length_data <- nrow(Training) - 3
+        remove <- c(seq(replicas + length_data + 1, replicas + 2 * length_data, 1),
+                    seq(2 * replicas + 2 * length_data + 1, 2 * replicas + 3 * length_data, 1),
+                    seq(3 * replicas + 3 * length_data + 1, 3 * replicas + 4 * length_data, 1),
+                    seq(4 * replicas + 4 * length_data + 1, 4 * replicas + 5 * length_data, 1))
+        return(Simulated[-remove, ])
+      }
+      
+      df_aug <- rem.repats(metadata_val, df_aug)
+      augmentedData(df_aug)
+    })
+    
+    output$AugmentedPreview <- DT::renderDT({
+      req(augmentedData())
+      
+      # Redondear a 2 decimales todas las columnas numéricas
+      df_rounded <- augmentedData()
+      df_rounded[, -1] <- lapply(df_rounded[, -1], function(x) round(x, 2))
+      
+      DT::datatable(df_rounded,
+                    options = list(
+                      scrollX = TRUE,       # scroll horizontal activado
+                      pageLength = 10,      # filas por página
+                      lengthMenu = c(10, 25, 50, 100)  # opciones de filas a mostrar
+                    ),
+                    rownames = FALSE
+      )
+    })
+    
+    output$boxPlotAugmented <- renderPlot({
+      req(augmentedData(), input$archivo)
+      
+      # Importar y preparar datos originales
+      metadata_val <- import_data(input$archivo$datapath)
+      data_plot <- metadata_val[-c(1, 2, 3), ]
+      names(data_plot)[1] <- "Class"
+      data_plot$Class <- as.factor(data_plot$Class)  # Asegurar que sea factor
+      
+      # Identificar columnas numéricas
+      quantitatives <- which(sapply(data_plot, is.numeric))
+      
+      # Obtener datos aumentados
+      data3 <- augmentedData()
+      data3$Class <- as.factor(data3$Class)  # Asegurar que sea factor
+      
+      # Preparar dataframe para boxplot
+      df <- cbind(Class = data3$Class, data3[quantitatives] + 1)
+      df2 <- log10(df[, -1] + 1)
+      df2$Class <- df$Class  # Volver a agregar la columna 'Class'
+      
+      # Obtener nombres de columnas numéricas y número de clases
+      num_cols <- setdiff(names(df2), "Class")
+      classes <- unique(df2$Class)
+      n_classes <- length(classes)
+      
+      # Colores manuales asignados por clase
+      colores_base <- c(
+        "#66c2a5", "#fc8d62", "#8da0cb", "#e78ac3",
+        "#a6d854", "#ffd92f", "#e5c494", "#b3b3b3"
+      )
+      colores <- setNames(colores_base[seq_along(classes)], classes)
+      
+      # Generar boxplots
+      plot_list <- lapply(num_cols, function(col) {
+        ggplot(df2, aes(x = .data[[col]], y = Class, fill = Class)) +
+          geom_boxplot(outlier.size = 1, alpha = 0.8) +
+          scale_fill_manual(values = colores) +
+          labs(title = paste(col, "by Class"),
+               x = col, y = "Class") +
+          theme_minimal(base_size = 12) +
+          theme(
+            axis.text.x = element_text(angle = 45, hjust = 1),
+            legend.position = "none",
+            plot.title = element_text(face = "bold", size = 14)
+          )
+      })
+      
+      # Mostrar los plots juntos
+      wrap_plots(plot_list, ncol = 3) +
+        plot_annotation(
+          theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5))
+        )
+    })
+    shinyalert::shinyalert(
+      title = "🚀 <strong>Next Step</strong>",
+      text = HTML("
+    <p>Once you have reviewed the <strong>augmented data</strong> and <em>boxplots</em>, you can:</p>
+    <ul>
+      <li><strong>Go directly to the <em>Machine Learning</em> step</strong> if you do <u>not</u> wish to perform a dilution ratio calculation.</li>
+      <li>Or, continue to the <strong>'Ratio Calculation'</strong> section if you need to simulate dilution using log10 ratios.</li>
+    </ul>
+    <p style='margin-top:10px;'>Make sure to choose the path that fits your analysis goals.</p>
+  "),
+      type = "info",
+      html = TRUE,
+      confirmButtonText = "Got it!"
+    )
+    
+  })
+  
+  output$download_augmented <- downloadHandler(
+    filename = function() {
+      paste0("augmented_data-", Sys.Date(), ".xlsx")
+    },
+    content = function(file) {
+      save_data(augmentedData(), file)
+    }
+  )
+  
+  
+  
+  observe({
+    data <- augmentedData()  # Obtener los datos
+    choices <- setdiff(colnames(data), "Class")  # Ignorar "Class"
+    updateSelectInput(session, "columnX", choices = choices)
+    updateSelectInput(session, "columnY", choices = choices)
+  })
+  
+  
+  observeEvent(input$calculateRatio, {
+    req(augmentedData(), input$columnX, input$columnY)
+    data <- augmentedData()
+    
+    if (is.numeric(data[[input$columnX]]) && is.numeric(data[[input$columnY]])) {
+      ratio_data <- data
+      ratio_data$Ratio <- ifelse(
+        is.na(ratio_data[[input$columnX]]) | is.na(ratio_data[[input$columnY]]) |
+          ratio_data[[input$columnX]] < -10 | ratio_data[[input$columnY]] < -10,
+        NA,
+        log10(ratio_data[[input$columnX]] + 10) / log10(ratio_data[[input$columnY]] + 10)
+      )
+      
+      ratiosData(ratio_data)  
+      
+      output$ratioData <- DT::renderDataTable({
+        req(ratiosData())
+        
+        # Redondear a 2 decimales todas las columnas numéricas
+        df_rounded <- ratiosData()
+        df_rounded[, -1] <- lapply(df_rounded[, -1], function(x) round(x, 2))
+        DT::datatable(df_rounded, 
+                      options = list(
+                        scrollX = TRUE,       # scroll horizontal activado
+                        pageLength = 10,      # filas por página
+                        lengthMenu = c(10, 25, 50, 100)  # opciones de filas a mostrar
+                      ),
+                      rownames = FALSE
+        )
+      })
+      
+      
+      output$downloadRatios <- downloadHandler(
+        filename = function() {
+          paste0("ratios_", Sys.Date(), ".xlsx")
+        },
+        content = function(file) {
+          save_data(ratiosData(), file)
+        }
+      )
+      
+    } else {
+      showModal(modalDialog(
+        title = tags$div(style = "font-weight:bold; color: red;", "Error"),
+        HTML("<strong>Both selected columns must be numeric</strong> to calculate the ratio."),
+        easyClose = TRUE,
+        footer = NULL
+      ))
+      
+    }
+  })
+  
+  observeEvent(input$addRatioColumn, {
+    req(ratiosData())
+    
+    # Actualizamos augmentedData con el dataset que incluye la columna Ratio
+    augmentedData(ratiosData())
+    showNotification("Column 'Ratio' added to the data.", type = "message")
+    
+    shinyalert(
+      title = "Next Step",
+      text = "The <strong>'Ratio'</strong> column has been <em>successfully added</em>. You can now proceed to the <strong>Machine Learning</strong> section to train your models using the augmented data with the new ratio.",
+      type = "success",
+      html = TRUE,
+      confirmButtonText = "Let's go!"
+    )
+    
+  })
+  
+  observeEvent(input$customTrainingData, {
+    req(input$customTrainingData)
+    
+    tryCatch({
+      data <- import_data(input$customTrainingData$datapath)
+      augmentedData(data)
+      showNotification("Data loaded into augmentedData().", type = "message")
+      
+    }, error = function(e) {
+      showNotification(paste("❌ Failed to load data:", e$message), type = "error")
+    })
+  })
+  
+  
+  
+  # Variable reactiva para almacenar el modelo
+  model_h2o <- reactiveVal(NULL)
+  chosenClass <- reactiveVal(NULL)
+  models_list <- reactiveVal(NULL)
+  shap_list <- reactiveVal(NULL)
+  test_data_list <- reactiveVal(NULL)
+  
+  observeEvent(input$trainModel, {
+    req(augmentedData())
+    
+    df_aug <- augmentedData()
+    
+    if (!"Class" %in% names(df_aug)) {
+      showNotification("The 'Class' column is not present in the augmented data.", type = "error")
+      return()
+    }
+    
+    # Eliminar filas con Class NA
+    df_aug <- df_aug[!is.na(df_aug$Class), ]
+    
+    # Asegurar que sea factor y que 'Class' esté al final
+    df_aug$Class <- as.factor(df_aug$Class)
+    df_aug <- df_aug[, c(setdiff(names(df_aug), "Class"), "Class")]
+    
+    # Mostrar modal para elegir clase favorable solo si no está ya definida
+    if (is.null(chosenClass())) {
+      showModal(modalDialog(
+        title = tags$div(style = "font-weight: bold; font-size: 18px;", "Select Favorable Class"),
+        selectInput("chosenClassInput",
+                    label = tags$strong("Which class do you want to use as 'favorable'?"),
+                    choices = unique(df_aug$Class)),
+        footer = tagList(
+          modalButton(tags$span(style = "font-weight: bold;", "Cancel")),
+          actionButton("confirmTrainWithClass", tags$span(style = "font-weight: bold; color: white;", "Confirm"), class = "btn btn-primary")
+        ),
+        easyClose = FALSE
+      ))
+      
+    } else {
+      # Si ya está elegida, podemos lanzar directamente el entrenamiento
+      train_model_with_class(chosenClass())
+    }
+  })
+  
+  observeEvent(input$confirmTrainWithClass, {
+    req(input$chosenClassInput)
+    chosenClass(input$chosenClassInput)
+    removeModal()
+    train_model_with_class(chosenClass())
+  })
+  
+  # Función que ejecuta el entrenamiento con la clase favorable seleccionada
+  train_model_with_class <- function(fav_class) {
+    req(augmentedData())
+    
+    tryCatch({
+      withProgress(message = "Training Models...", value = 0, { # Start the main progress bar here
+        
+        # Step 0: Initialize H2O (this will start a new instance if none is running)
+        incProgress(0.05, detail = "Initializing H2O cluster...")
+        # Removed the if (!h2o.is.running()) check as h2o.init() handles it
+        h2o.init(nthreads = 1, max_mem_size = "2G")
+        # You might want to add h2o.removeAll() here if you want to clear the H2O cluster workspace
+        # from previous runs.
+        
+        # Step 1: Prepare Data and Initial H2O AutoML Training
+        incProgress(0.05, detail = "Preparing data and training main AutoML model...") # Adjusted starting progress
+        algo_choice <- input$algoChoice
+        selected_algos <- if (algo_choice == "ALL") {
+          c("DRF", "GLM", "XGBoost", "GBM", "DeepLearning", "StackedEnsemble")
+        } else {
+          algo_choice
+        }
+        
+        df_aug <- augmentedData()
+        df_aug <- df_aug[!is.na(df_aug$Class), ]
+        df_aug$Class <- as.factor(df_aug$Class)
+        df_aug <- df_aug[, c(setdiff(names(df_aug), "Class"), "Class")]  
+        
+        
+        # Partición 70%-30%
+        inTrain <- caret::createDataPartition(y = df_aug$Class, p = 0.7, list = FALSE)
+        training <- df_aug[inTrain, ]
+        validation <- df_aug[-inTrain, ]
+        
+        train_set <- as.h2o(training)
+        validation_set <- as.h2o(validation)
+        
+        y <- 'Class'
+        predictors <- setdiff(names(training), y)
+        
+        train_set[, y] <- as.factor(train_set[, y])
+        validation_set[, y] <- as.factor(validation_set[, y])
+        
+        # Detectar si es binario o multinomial
+        num_classes <- length(unique(df_aug$Class))
+        if (num_classes == 2) {
+          max_models_val <- 50
+        } else {
+          max_models_val <- 25
+        }
+        
+        model <- h2o.automl(
+          x = predictors, y = y,
+          training_frame = train_set,
+          validation_frame = validation_set,
+          max_models = max_models_val,
+          max_runtime_secs = 120,
+          seed = 1234,
+          include_algos = selected_algos
+        )
+        
+        model_h2o(model)
+        best_model <- model@leader
+        incProgress(0.3, detail = "Evaluating main model performance...") # Progress after AutoML
+        
+        model_performance <- h2o.performance(best_model, validation_set)
+        
+        output$rocPlot <- renderPlot({
+          if(length(unique(df_aug$Class)) == 2) {
+            # Binomial: usar plot() base de h2o
+            plot(model_performance, type = "roc")
+          } else {
+            # Multinomial: usar multiROC y ggplot2
+            
+            # Predecir probabilidades
+            predictions <- h2o.predict(best_model, validation_set)
+            
+            y_true <- as.vector(validation_set[,'Class'])
+            y_probs <- as.data.frame(predictions)[, -1]  # quitar columna clase predicha
+            
+            class_names <- colnames(y_probs)
+            y_true <- factor(y_true, levels = class_names)
+            
+            # One-hot encode manual
+            true_df <- as.data.frame(sapply(class_names, function(cl) as.integer(y_true == cl)))
+            colnames(true_df) <- paste0(class_names, "_true")
+            colnames(y_probs) <- paste0(class_names, "_pred_m1")
+            
+            multi_df <- cbind(true_df, y_probs)
+            
+            roc_res <- multi_roc(multi_df, force_diag = TRUE)
+            plot_df <- plot_roc_data(roc_res)
+            
+            annotation_df <- data.frame(
+              Group = c(class_names, "Macro", "Micro"),
+              AUC = as.numeric(unlist(roc_res$AUC))
+            )
+            
+            ggplot(plot_df, aes(x = 1 - Specificity, y = Sensitivity)) +
+              geom_path(aes(color = Group), size = 1.2) +
+              facet_wrap(~ Group, scales = "fixed") +
+              labs(title = "Multiclass ROC Curves (multiROC)", x = "1 - Specificity", y = "Sensitivity") +
+              theme_minimal(base_size = 14) +
+              theme(
+                plot.title = element_text(size = 18, face = 'bold'),
+                axis.title = element_text(size = 16),
+                axis.text.x = element_text(size = 14, angle = 90),
+                axis.text.y = element_text(size = 14),
+                legend.position = "bottom",
+                strip.text = element_text(size = 16, face = 'bold')
+              ) +
+              geom_text(data = annotation_df, aes(x = 0.6, y = 0.2, label = sprintf("AUC = %.4f", AUC)), size = 5, color = "black")
+          }
+        })
+        
+        
+        # Step 2: Training binary models and calculating SHAP
+        incProgress(0.3, detail = "Training binary models and calculating SHAP values...")
+        classes <- setdiff(levels(df_aug$Class), fav_class)
+        
+        models <- list()
+        shap_values_all <- list()
+        test_df_all <- list()
+        
+        total_binary_models <- length(classes)
+        if (total_binary_models > 0) {
+          progress_per_model <- 0.4 / total_binary_models # Allocate 40% of the total progress for binary models and SHAP
+        } else {
+          progress_per_model <- 0
+        }
+        
+        for (i in seq_along(classes)) {
+          cls <- classes[i]
+          bin_data <- df_aug %>% filter(Class %in% c(fav_class, cls))
+          bin_data$Class <- factor(bin_data$Class, levels = c(fav_class, cls))
+          
+          bin_h2o <- as.h2o(bin_data)
+          splits <- h2o.splitFrame(bin_h2o, ratios = 0.7, seed = 1234)
+          train_bin <- splits[[1]]
+          test_bin <- splits[[2]]
+          
+          y_bin <- "Class"
+          x_bin <- setdiff(names(bin_data), y_bin)
+          
+          mdl <- h2o.gbm(
+            x = x_bin, y = y_bin,
+            training_frame = train_bin,
+            validation_frame = test_bin,
+            distribution = "bernoulli",
+            seed = 1234,
+            ntrees = 50,
+            max_depth = 5
+          )
+          
+          models[[cls]] <- mdl
+          
+          shap <- h2o.predict_contributions(mdl, test_bin)
+          shap_df <- as.data.frame(shap)
+          shap_df$ID <- 1:nrow(shap_df)
+          
+          shap_values_all[[cls]] <- shap_df
+          test_df_all[[cls]] <- as.data.frame(test_bin)
+          
+          incProgress(progress_per_model, detail = paste0("Processing binary model for class: ", cls))
+        }
+        
+        models_list(models)
+        shap_list(shap_values_all)
+        test_data_list(test_df_all)
+        
+        showNotification("Binary models and SHAP values calculated successfully.", type = "message")
+        
+        output$shapPlotsUI <- renderUI({
+          req(shap_list(), models_list())
+          shap_vals <- shap_list()
+          classes <- names(shap_vals)
+          
+          plot_output_list <- lapply(classes, function(cls){
+            plotname <- paste0("shapplot_", cls)
+            plotOutput(plotname, height = "400px")
+          })
+          do.call(tagList, plot_output_list)
+        })
+        
+        observe({
+          req(shap_list(), models_list())
+          shap_vals <- shap_list()
+          models <- models_list()
+          
+          lapply(names(shap_vals), function(cls){
+            local({
+              my_cls <- cls
+              plotname <- paste0("shapplot_", my_cls)
+              
+              output[[plotname]] <- renderPlot({
+                shap_df <- shap_vals[[my_cls]]
+                model <- models[[my_cls]]
+                test_df <- test_data_list()[[my_cls]]
+                if (is.null(test_df)) return(NULL)
+                
+                predictors <- setdiff(names(test_df), "Class")
+                
+                shap_long <- shap_df %>%
+                  pivot_longer(-ID, names_to = "Feature", values_to = "SHAP") %>%
+                  filter(Feature != "BiasTerm") %>%
+                  left_join(
+                    test_df %>%
+                      mutate(ID = 1:nrow(.)) %>%
+                      pivot_longer(-c(ID, Class), names_to = "Feature", values_to = "value"),
+                    by = c("ID", "Feature")
+                  ) %>%
+                  group_by(Feature) %>%
+                  mutate(norm_value = (value - min(value, na.rm = TRUE)) / (max(value, na.rm = TRUE) - min(value, na.rm = TRUE))) %>%
+                  ungroup()
+                
+                top_features <- shap_long %>%
+                  group_by(Feature) %>%
+                  summarise(mean_abs = mean(abs(SHAP)), .groups = "drop") %>%
+                  arrange(desc(mean_abs)) %>%
+                  slice_head(n = 10) %>%
+                  pull(Feature)
+                
+                shap_top <- filter(shap_long, Feature %in% top_features)
+                shap_top$Feature <- factor(shap_top$Feature, levels = rev(top_features))
+                
+                # Obtener las dos clases involucradas
+                class_labels <- unique(test_df$Class)
+                plot_title <- paste0(class_labels[1], " vs ", class_labels[2])
+                
+                ggplot(shap_top, aes(x = SHAP, y = Feature, color = Class)) +
+                  geom_point(aes(size = norm_value), alpha = 0.6) +
+                  geom_vline(xintercept = 0, linetype = "dashed") +
+                  labs(
+                    title = plot_title,
+                    x = "SHAP Contribution",
+                    y = "Feature",
+                    color = "Class",
+                    size = "Normalized\nValue"
+                  ) +
+                  scale_color_manual(values = c("#1f78b4", "#e31a1c")) +  # Azul y rojo
+                  theme_minimal(base_size = 14) +
+                  theme(
+                    legend.position = "right",
+                    plot.title = element_text(face = "bold", size = 14, hjust = 0.5),
+                    axis.title = element_text(face = "bold")
+                  )
+              })
+              
+            })
+          })
+        })
+        
+        # Step 3: Render other plots and notifications
+        incProgress(0.1, detail = "Rendering final plots and summaries...") # Small progress for final rendering
+        output$modelSummary <- renderPrint({
+          print(h2o.confusionMatrix(model_performance))
+        })
+        
+        output$learningCurve_full <- renderPlot({
+          h2o.learning_curve_plot(best_model)
+        })
+        
+        output$variableImportance_full <- renderPlot({
+          h2o.varimp_plot(best_model)
+        })
+        
+        output$downloadLearningCurve <- downloadHandler(
+          filename = function() "learning_curve.png",
+          content = function(file) {
+            png(file, width = 800, height = 600)
+            h2o.learning_curve_plot(best_model)
+            dev.off()
+          }
+        )
+        
+        output$downloadVariableImportance <- downloadHandler(
+          filename = function() "variable_importance.png",
+          content = function(file) {
+            png(file, width = 800, height = 600)
+            h2o.varimp_plot(best_model)
+            dev.off()
+          }
+        )
+        
+        showNotification(
+          paste0("✅ Training completed using: ", paste(selected_algos, collapse = ", ")),
+          type = "message"
+        )
+      }) # End of withProgress block
+      
+      # Mostrar modal para decidir si aplicar Infogram
+      showModal(modalDialog(
+        title = tags$div(style = "font-weight: bold; font-size: 18px;", "Reduce MST Predictors?"),
+        tags$p(style = "font-style: italic; font-size: 16px;",
+               "Would you like to apply H2O Infogram to reduce the number of MST predictors?"),
+        footer = tagList(
+          actionButton("runInfogram", tags$span(style = "font-weight: bold;", "Yes, reduce"), class = "btn btn-primary"),
+          actionButton("noInfogram", tags$span(style = "font-weight: bold;", "No"), class = "btn btn-secondary")
+        ),
+        easyClose = FALSE
+      ))
+      
+      
+      # Si el usuario dice que NO
+      observeEvent(input$noInfogram, {
+        removeModal()
+        shinyalert::shinyalert(
+          title ="Infogram Not Applied",
+          text = tags$span(style = "font-style: italic; font-size: 14px;",
+                           "Once you've reviewed the ML results, you can proceed to the prediction tab."),
+          type = "info",
+          html = TRUE
+        )
+        
+      })
+      
+    }, error = function(e) {
+      showNotification(paste("❌ Error during training:", e$message), type = "error")
+    })
+  }
+  
+  model_name <- reactiveVal(NULL)
+  
+  output$downloadModel <- downloadHandler(
+    filename = function() {
+      model_obj <- model_h2o()
+      
+      # Obtener el modelo principal si es AutoML
+      if ("H2OAutoML" %in% class(model_obj)) {
+        model_to_save <- model_obj@leader
+      } else {
+        model_to_save <- model_obj
+      }
+      
+      # Extraer el model_id directamente aquí
+      model_id <- model_to_save@model_id
+      paste0(model_id, ".zip")
+    },
+    
+    content = function(file) {
+      model_obj <- model_h2o()
+      
+      # Obtener modelo principal si es AutoML
+      if ("H2OAutoML" %in% class(model_obj)) {
+        model_to_save <- model_obj@leader
+      } else {
+        model_to_save <- model_obj
+      }
+      
+      model_id <- model_to_save@model_id
+      
+      # Crear carpeta temporal con el nombre del modelo
+      temp_dir <- file.path(tempdir(), model_id)
+      dir.create(temp_dir, recursive = TRUE)
+      
+      # Guardar el modelo
+      h2o.saveModel(object = model_to_save, path = temp_dir, force = TRUE)
+      
+      # Comprimir solo los archivos del modelo (sin rutas absolutas)
+      files_to_zip <- list.files(temp_dir, full.names = FALSE, recursive = TRUE)
+      
+      old_wd <- setwd(temp_dir)
+      on.exit(setwd(old_wd), add = TRUE)
+      
+      zip::zip(zipfile = file, files = files_to_zip)
+    },
+    
+    contentType = "application/zip"
+  )
+  
+  
+  
+  
+  observeEvent(input$loadModelBtn, {
+    req(input$uploadModel)
+    
+    file_path <- input$uploadModel$datapath
+    file_name <- tools::file_path_sans_ext(input$uploadModel$name)
+    
+    tryCatch({
+      h2o.init(nthreads = -1, max_mem_size = "2G")
+      
+      destino_modelo <- file.path("~/Desktop/China/Ichnaea_MST/models", file_name)
+      dir.create(destino_modelo, recursive = TRUE, showWarnings = FALSE)
+      
+      # Copiar ZIP
+      zip_path <- file.path(destino_modelo, paste0(file_name, ".zip"))
+      file.copy(file_path, zip_path, overwrite = TRUE)
+      
+      # Descomprimir
+      unzip(zip_path, exdir = destino_modelo)
+      
+      # Buscar archivo de modelo (no carpeta)
+      archivos_modelo <- list.files(destino_modelo, full.names = TRUE, recursive = TRUE)
+      archivo_modelo <- archivos_modelo[grepl(paste0(".*/", file_name, "$"), archivos_modelo)]
+      
+      if (length(archivo_modelo) != 1) {
+        stop("No se pudo encontrar el archivo del modelo descomprimido.")
+      }
+      
+      # Cargar el modelo directamente
+      trained.model <- h2o.loadModel(archivo_modelo)
+      model_h2o(trained.model)
+      
+      if (!is.null(augmentedData())) {
+        tryCatch({
+          shap_data <- augmentedData()
+          shap_data$Class <- as.factor(shap_data$Class)
+          
+          classes <- levels(shap_data$Class)
+          fav_class <- tail(classes, 1)  # o puedes usar chosenClass() si ya lo tienes cargado
+          
+          shap_models <- list()
+          shap_values_all <- list()
+          test_df_all <- list()
+          
+          for (cls in setdiff(classes, fav_class)) {
+            bin_data <- shap_data %>% filter(Class %in% c(fav_class, cls))
+            bin_data$Class <- factor(bin_data$Class, levels = c(fav_class, cls))
+            
+            bin_h2o <- as.h2o(bin_data)
+            splits <- h2o.splitFrame(bin_h2o, ratios = 0.7, seed = 1234)
+            train_bin <- splits[[1]]
+            test_bin <- splits[[2]]
+            
+            y_bin <- "Class"
+            x_bin <- setdiff(names(bin_data), y_bin)
+            
+            mdl <- h2o.gbm(
+              x = x_bin, y = y_bin,
+              training_frame = train_bin,
+              validation_frame = test_bin,
+              distribution = "bernoulli",
+              seed = 1234,
+              ntrees = 50,
+              max_depth = 5
+            )
+            
+            shap_models[[cls]] <- mdl
+            
+            shap <- h2o.predict_contributions(mdl, test_bin)
+            shap_df <- as.data.frame(shap)
+            shap_df$ID <- 1:nrow(shap_df)
+            
+            shap_values_all[[cls]] <- shap_df
+            test_df_all[[cls]] <- as.data.frame(test_bin)
+          }
+          
+          models_list(shap_models)
+          shap_list(shap_values_all)
+          test_data_list(test_df_all)
+          
+          output$shapPlotsUI <- renderUI({
+            req(shap_list(), models_list())
+            shap_vals <- shap_list()
+            classes <- names(shap_vals)
+            
+            plot_output_list <- lapply(classes, function(cls){
+              plotname <- paste0("shapplot_", cls)
+              plotOutput(plotname, height = "400px")
+            })
+            do.call(tagList, plot_output_list)
+          })
+          
+          observe({
+            req(shap_list(), models_list())
+            shap_vals <- shap_list()
+            models <- models_list()
+            
+            lapply(names(shap_vals), function(cls){
+              local({
+                my_cls <- cls
+                plotname <- paste0("shapplot_", my_cls)
+                
+                output[[plotname]] <- renderPlot({
+                  shap_df <- shap_vals[[my_cls]]
+                  model <- models[[my_cls]]
+                  test_df <- test_data_list()[[my_cls]]
+                  if (is.null(test_df)) return(NULL)
+                  
+                  predictors <- setdiff(names(test_df), "Class")
+                  
+                  shap_long <- shap_df %>%
+                    pivot_longer(-ID, names_to = "Feature", values_to = "SHAP") %>%
+                    filter(Feature != "BiasTerm") %>%
+                    left_join(
+                      test_df %>%
+                        mutate(ID = 1:nrow(.)) %>%
+                        pivot_longer(-c(ID, Class), names_to = "Feature", values_to = "value"),
+                      by = c("ID", "Feature")
+                    ) %>%
+                    group_by(Feature) %>%
+                    mutate(norm_value = (value - min(value, na.rm = TRUE)) / (max(value, na.rm = TRUE) - min(value, na.rm = TRUE))) %>%
+                    ungroup()
+                  
+                  top_features <- shap_long %>%
+                    group_by(Feature) %>%
+                    summarise(mean_abs = mean(abs(SHAP)), .groups = "drop") %>%
+                    arrange(desc(mean_abs)) %>%
+                    slice_head(n = 10) %>%
+                    pull(Feature)
+                  
+                  shap_top <- filter(shap_long, Feature %in% top_features)
+                  shap_top$Feature <- factor(shap_top$Feature, levels = rev(top_features))
+                  
+                  class_labels <- unique(test_df$Class)
+                  plot_title <- paste0(class_labels[1], " vs ", class_labels[2])
+                  
+                  ggplot(shap_top, aes(x = SHAP, y = Feature, color = Class)) +
+                    geom_point(aes(size = norm_value), alpha = 0.6) +
+                    geom_vline(xintercept = 0, linetype = "dashed") +
+                    labs(
+                      title = plot_title,
+                      x = "SHAP Contribution",
+                      y = "Feature",
+                      color = "Class",
+                      size = "Normalized\nValue"
+                    ) +
+                    scale_color_manual(values = c("#1f78b4", "#e31a1c")) +
+                    theme_minimal(base_size = 14) +
+                    theme(
+                      legend.position = "right",
+                      plot.title = element_text(face = "bold", size = 14, hjust = 0.5),
+                      axis.title = element_text(face = "bold")
+                    )
+                })
+              })
+            })
+          })
+          # --- Agregar lógica ROC aquí ---
+          tryCatch({
+            df_aug <- augmentedData()
+            df_aug$Class <- as.factor(df_aug$Class)
+            
+            # Convertir a h2o frame
+            data_h2o <- as.h2o(df_aug)
+            
+            # Obtener performance del modelo con augmentedData
+            perf <- h2o.performance(trained.model, newdata = data_h2o)
+            
+            num_classes <- length(levels(df_aug$Class))
+            
+            output$rocPlot <- renderPlot({
+              if (num_classes == 2) {
+                # Binomial ROC plot nativo de H2O
+                plot(perf, type = "roc")
+              } else {
+                # Multiclass ROC con multiROC y ggplot2
+                
+                # Predecir probabilidades
+                predictions <- h2o.predict(trained.model, data_h2o)
+                
+                y_true <- as.vector(data_h2o[,'Class'])
+                y_probs <- as.data.frame(predictions)[, -1]  # eliminar columna de clase predicha
+                
+                class_names <- colnames(y_probs)
+                y_true <- factor(y_true, levels = class_names)
+                
+                true_df <- as.data.frame(sapply(class_names, function(cl) as.integer(y_true == cl)))
+                colnames(true_df) <- paste0(class_names, "_true")
+                colnames(y_probs) <- paste0(class_names, "_pred_m1")
+                
+                multi_df <- cbind(true_df, y_probs)
+                
+                roc_res <- multi_roc(multi_df, force_diag = TRUE)
+                plot_df <- plot_roc_data(roc_res)
+                
+                annotation_df <- data.frame(
+                  Group = c(class_names, "Macro", "Micro"),
+                  AUC = as.numeric(unlist(roc_res$AUC))
+                )
+                
+                ggplot(plot_df, aes(x = 1 - Specificity, y = Sensitivity)) +
+                  geom_path(aes(color = Group), size = 1.2) +
+                  facet_wrap(~ Group, scales = "fixed") +
+                  labs(title = "Multiclass ROC Curves (multiROC)", x = "1 - Specificity", y = "Sensitivity") +
+                  theme_minimal(base_size = 14) +
+                  theme(
+                    plot.title = element_text(size = 18, face = 'bold'),
+                    axis.title = element_text(size = 16),
+                    axis.text.x = element_text(size = 14, angle = 90),
+                    axis.text.y = element_text(size = 14),
+                    legend.position = "bottom",
+                    strip.text = element_text(size = 16, face = 'bold')
+                  ) +
+                  geom_text(data = annotation_df, aes(x = 0.6, y = 0.2, label = sprintf("AUC = %.4f", AUC)), size = 5, color = "black")
+              }
+            })
+            
+          }, error = function(e) {
+            showNotification(paste("Error generating ROC plot:", e$message), type = "error")
+          })
+          
+          showNotification("SHAP values generated from loaded model using augmented data.", type = "message")
+          
+        }, error = function(e) {
+          showNotification(paste("Error generating SHAP from loaded model:", e$message), type = "error")
+        })
+      }
+      
+      output$modelSummary <- renderPrint({
+        tryCatch({
+          if (!is.null(augmentedData())) {
+            h2o.no_progress()  # Desactivar barras de progreso de H2O
+            data_h2o <- as.h2o(augmentedData())
+            perf <- h2o.performance(trained.model, newdata = data_h2o)
+            cm <- h2o.confusionMatrix(perf)
+            print(cm)
+          } else {
+            print(trained.model)
+          }
+        }, error = function(e) {
+          cat("Error when showing the model details:", e$message)
+        })
+      })
+      
+      output$learningCurve_full <- renderPlot({
+        tryCatch({
+          h2o.learning_curve_plot(trained.model)
+        }, error = function(e) {
+          plot.new()
+          text(0.5, 0.5, "No learning curve available")
+        })
+      })
+      output$variableImportance_full <- renderPlot({
+        tryCatch({
+          h2o.varimp_plot(trained.model)
+        }, error = function(e) {
+          plot.new()
+          text(0.5, 0.5, "No variable importance available")
+        })
+      })
+      
+    }, error = function(e) {
+      showNotification(paste("Error when loading the model", e$message), type = "error")
+    })
+  })
+  
+  
+  
+  
+  
+  
+  
+  observeEvent(input$runInfogram, {
+    removeModal()
+    req(augmentedData())
+    
+    if (is.null(chosenClass())) {
+      showNotification("No favorable class selected. Please train a model first.", type = "error")
+      return()
+    }
+    withProgress(message = 'Running H2O Infogram...', value = 0, {
+      incProgress(0.05, detail = "Preparing data...")
+      data3 <- augmentedData()
+      data3 <- data3[!is.na(data3$Class), ]
+      data3$Class <- as.factor(data3$Class)
+      y <- "Class"
+      
+      fav_class <- chosenClass()
+      algo_choice <- input$algoChoice
+      selected_algos <- if (algo_choice == "ALL") {
+        c("DRF", "GLM", "XGBoost", "GBM", "DeepLearning", "StackedEnsemble")
+      } else {
+        algo_choice
+      }
+      
+      # --- Cargar metadata y seleccionar predictores marcados ---
+      metadata <- data3[c(1, 2, 3), -1]
+      selected_vars <- names(metadata[, grep(1, metadata[3, ])])
+      
+      data4 <- data3[selected_vars]
+      data4$Class <- data3$Class
+      
+      # --- División de dataset para Infogram ---
+      incProgress(0.10, detail = "Splitting data for Infogram...")
+      splits <- h2o.splitFrame(
+        data = as.h2o(data4),
+        ratios = c(0.6, 0.2),
+        destination_frames = c("Training_Infogram", "Validation_Infogram", "Testing_Infogram"),
+        seed = 1234
+      )
+      
+      train <- splits[[1]]
+      valid <- splits[[2]]
+      test  <- splits[[3]]
+      
+      train[, y] <- as.factor(train[, y])
+      valid[, y] <- as.factor(valid[, y])
+      test[, y]  <- as.factor(test[, y])
+      predictor <- setdiff(names(train), y)
+      reduced_predictors(predictor)
+      
+      # --- Ejecutar Infogram ---
+      incProgress(0.15, detail = "Running Infogram...")
+      infogram.results <- h2o.infogram(
+        x = predictor, y = y,
+        training_frame = train,
+        validation_frame = valid,
+        nfolds = 10,
+        top_n_features = length(selected_vars)
+      )
+      
+      # --- Subset con predictores admisibles ---
+      admissible <- infogram.results@admissible_features
+      data4 <- data3[admissible]
+      data4$Class <- data3$Class
+      
+      # --- División del subset reducido ---
+      incProgress(0.20, detail = "Splitting reduced dataset...")
+      splits <- h2o.splitFrame(
+        data = as.h2o(data4),
+        ratios = c(0.6, 0.2),
+        destination_frames = c("Training_reduced", "Validation_reduced", "Testing_reduced"),
+        seed = 1234
+      )
+      
+      train <- splits[[1]]
+      valid <- splits[[2]]
+      test  <- splits[[3]]
+      
+      train[, y] <- as.factor(train[, y])
+      valid[, y] <- as.factor(valid[, y])
+      test[, y]  <- as.factor(test[, y])
+      predictor <- setdiff(names(train), y)
+      
+      # --- Entrenamiento con AutoML reducido ---
+      num_classes <- length(unique(data3$Class))
+      max_models_val <- ifelse(num_classes == 2, 50, 25)
+      
+      incProgress(0.25, detail = paste("Training AutoML with", length(admissible), "features..."))
+      model_reduceded <- h2o.automl(
+        x = predictor, y = y,
+        training_frame = train,
+        validation_frame = valid,
+        leaderboard_frame = test,
+        max_models = max_models_val,
+        max_runtime_secs = 120,
+        seed = 1234,
+        include_algos = selected_algos
+      )
+      model_reduced(model_reduceded)
+      
+      
+      best_model_reduced <- model_reduceded@leader
+      model_reduced_perforance <- h2o.performance(best_model_reduced, valid)
+      
+      output$rocPlot_reduced <- renderPlot({
+        if(length(unique(data3$Class)) == 2)  {
+          plot(model_reduced_perforance, type = "roc")
+        } else {
+          predictions <- h2o.predict(best_model_reduced, valid)
+          y_true <- as.vector(valid[,'Class'])
+          y_probs <- as.data.frame(predictions)[, -1]
+          
+          class_names <- colnames(y_probs)
+          y_true <- factor(y_true, levels = class_names)
+          
+          true_df <- as.data.frame(sapply(class_names, function(cl) as.integer(y_true == cl)))
+          colnames(true_df) <- paste0(class_names, "_true")
+          colnames(y_probs) <- paste0(class_names, "_pred_m1")
+          
+          multi_df <- cbind(true_df, y_probs)
+          roc_res <- multi_roc(multi_df, force_diag = TRUE)
+          plot_df <- plot_roc_data(roc_res)
+          
+          annotation_df <- data.frame(
+            Group = c(class_names, "Macro", "Micro"),
+            AUC = as.numeric(unlist(roc_res$AUC))
+          )
+          
+          ggplot(plot_df, aes(x = 1 - Specificity, y = Sensitivity)) +
+            geom_path(aes(color = Group), size = 1.2) +
+            facet_wrap(~ Group, scales = "fixed") +
+            labs(title = "Multiclass ROC Curves (multiROC)", x = "1 - Specificity", y = "Sensitivity") +
+            theme_minimal(base_size = 14) +
+            theme(
+              plot.title = element_text(size = 18, face = 'bold'),
+              axis.title = element_text(size = 16),
+              axis.text.x = element_text(size = 14, angle = 90),
+              axis.text.y = element_text(size = 14),
+              legend.position = "bottom",
+              strip.text = element_text(size = 16, face = 'bold')
+            ) +
+            geom_text(data = annotation_df, aes(x = 0.6, y = 0.2, label = sprintf("AUC = %.4f", AUC)), size = 5, color = "black")
+        }
+      })
+      
+      classes <- setdiff(levels(data3$Class), fav_class)
+      model_bin_list <- list()
+      shap_bin_list <- list()
+      test_data_bin_list <- list()
+      
+      n_classes <- length(classes)
+      for (i in seq_along(classes)) {
+        cls <- classes[i]
+        incProgress(0.65 / n_classes, detail = paste("Training binary model for class:", cls))
+        
+        bin_data <- data3
+        bin_data$Class <- as.factor(ifelse(bin_data$Class == cls, fav_class, cls))
+        
+        
+        if (length(unique(bin_data$Class)) < 2) {
+          showNotification(paste("Skipping binary model for class:", cls, "due to lack of class variability"), type = "warning")
+          next
+        }
+        
+        bin_h2o <- as.h2o(bin_data)
+        split_bin <- h2o.splitFrame(bin_h2o, ratios = 0.8, seed = 1234)
+        train_bin <- split_bin[[1]]
+        test_bin <- split_bin[[2]]
+        
+        model_bin <- h2o.gbm(
+          x = admissible, y = y,
+          training_frame = train_bin,
+          validation_frame = test_bin,
+          ntrees = 50,
+          max_depth = 5,
+          nfolds = 5,
+          seed = 1234,
+          distribution = "bernoulli"
+        )
+        
+        model_bin_list[[cls]] <- model_bin
+        test_data_bin_list[[cls]] <- as.data.frame(test_bin)
+        
+        shap_vals <- as.data.frame(h2o.predict_contributions(model_bin, test_bin))
+        shap_vals$ID <- seq_len(nrow(shap_vals))
+        shap_bin_list[[cls]] <- shap_vals
+      }
+      
+      models_list_infogram(model_bin_list)
+      shap_list_infogram(shap_bin_list)
+      test_data_list_infogram(test_data_bin_list)
+      
+      showNotification(paste("Infogram selected", length(admissible), "predictors"), type = "message")
+    })
+    
+    output$shapPlotsUI_reduced <- renderUI({
+      req(shap_list_infogram(), models_list_infogram())
+      shap_vals <- shap_list_infogram()
+      classes <- names(shap_vals)
+      
+      plot_output_list <- lapply(classes, function(cls){
+        plotname <- paste0("shapplot_infogram_", cls)
+        plotOutput(plotname, height = "400px")
+      })
+      do.call(tagList, plot_output_list)
+    })
+    
+    observe({
+      req(shap_list_infogram(), models_list_infogram())
+      shap_vals <- shap_list_infogram()
+      models <- models_list_infogram()
+      
+      lapply(names(shap_vals), function(cls){
+        local({
+          my_cls <- cls
+          plotname <- paste0("shapplot_infogram_", my_cls)
+          
+          output[[plotname]] <- renderPlot({
+            shap_df <- shap_vals[[my_cls]]
+            model <- models[[my_cls]]
+            test_df <- test_data_list_infogram()[[my_cls]]
+            if (is.null(test_df)) return(NULL)
+            
+            predictors <- setdiff(names(test_df), "Class")
+            
+            shap_long <- shap_df %>%
+              pivot_longer(-ID, names_to = "Feature", values_to = "SHAP") %>%
+              filter(Feature != "BiasTerm") %>%
+              left_join(
+                test_df %>%
+                  mutate(ID = 1:nrow(.)) %>%
+                  pivot_longer(-c(ID, Class), names_to = "Feature", values_to = "value"),
+                by = c("ID", "Feature")
+              ) %>%
+              group_by(Feature) %>%
+              mutate(norm_value = (value - min(value, na.rm = TRUE)) / (max(value, na.rm = TRUE) - min(value, na.rm = TRUE))) %>%
+              ungroup()
+            
+            top_features <- shap_long %>%
+              group_by(Feature) %>%
+              summarise(mean_abs = mean(abs(SHAP)), .groups = "drop") %>%
+              arrange(desc(mean_abs)) %>%
+              slice_head(n = 10) %>%
+              pull(Feature)
+            
+            shap_top <- filter(shap_long, Feature %in% top_features)
+            shap_top$Feature <- factor(shap_top$Feature, levels = rev(top_features))
+            
+            class_labels <- unique(test_df$Class)
+            plot_title <- paste0(class_labels[1], " vs ", class_labels[2])
+            
+            ggplot(shap_top, aes(x = SHAP, y = Feature, color = Class)) +
+              geom_point(aes(size = norm_value), alpha = 0.6) +
+              geom_vline(xintercept = 0, linetype = "dashed") +
+              labs(
+                title = plot_title,
+                x = "SHAP Contribution",
+                y = "Feature",
+                color = "Class",
+                size = "Normalized\nValue"
+              ) +
+              scale_color_manual(values = c("#1f78b4", "#e31a1c")) +
+              theme_minimal(base_size = 14) +
+              theme(
+                legend.position = "right",
+                plot.title = element_text(face = "bold", size = 14, hjust = 0.5),
+                axis.title = element_text(face = "bold")
+              )
+          })
+        })
+      })
+    })
+    
+    output$modelSummary_reduced <- renderPrint({
+      req(best_model_reduced)
+      try(h2o.confusionMatrix(best_model_reduced, test))
+    })
+    
+    output$learningCurve_reduced <- renderPlot({
+      req(best_model_reduced)
+      h2o.learning_curve_plot(best_model_reduced)
+    })
+    
+    output$variableImportance_reduced <- renderPlot({
+      req(best_model_reduced)
+      h2o.varimp_plot(best_model_reduced)
+    })
+    
+    
+    showModal(modalDialog(
+      title = tags$span(style = "font-weight: bold; font-size: 18px;", "Download Reduced Model"),
+      HTML("<p><em>Do you want to download the model trained on <strong>Infogram-selected predictors</strong>?</em></p>"),
+      tags$style("#downloadReducedModel { visibility: hidden; height: 0; }"),
+      footer = tagList(
+        downloadButton("downloadReducedModel", label = NULL),  # Oculto, pero funcional
+        actionButton("confirmDownloadReducedModel", "Yes, download!"),
+        modalButton("Cancel")
+      ),
+      easyClose = TRUE
+    ))
+    
+    observeEvent(input$noSaveReducedModel, {
+      removeModal()
+      shinyalert(
+        title = "Infogram Models Complete",
+        text = "<strong>Once you've reviewed the ML results, you can proceed to the <em>prediction tab</em>.</strong>",
+        type = "info",
+        html = TRUE
+      )
+    })
+    # ⚡ Lógica al hacer clic en el botón de confirmación
+    observeEvent(input$confirmDownloadReducedModel, {
+      removeModal()
+      
+      shinyalert(
+        title = "✅ Preparing Download",
+        text = "Your reduced model will begin downloading shortly.",
+        type = "success"
+      )
+      
+      shinyjs::click("downloadReducedModel")
+      
+    })
+    
+    output$downloadReducedModel <- downloadHandler(
+      filename = function() {
+        paste0(best_model_reduced@model_id, ".zip")
+      },
+      content = function(file) {
+        model_obj <- best_model_reduced
+        
+        if ("H2OAutoML" %in% class(model_obj)) {
+          model_to_save <- model_obj@leader
+        } else {
+          model_to_save <- model_obj
+        }
+        
+        model_id <- model_to_save@model_id
+        temp_dir <- file.path(tempdir(), model_id)
+        dir.create(temp_dir, recursive = TRUE)
+        
+        h2o.saveModel(object = model_to_save, path = temp_dir, force = TRUE)
+        
+        files_to_zip <- list.files(temp_dir, full.names = FALSE, recursive = TRUE)
+        old_wd <- setwd(temp_dir)
+        on.exit(setwd(old_wd), add = TRUE)
+        
+        zip::zip(zipfile = file, files = files_to_zip)
+      },
+      contentType = "application/zip"
+    )
+    
+  })
+  
+  
+  # Función: Obtener umbrales de LOD (sin lógica de modelo reducido)
+  get_lod_thresholds <- function(metadata, toclassify) {
+    toclassify_markers <- colnames(toclassify)[-1]
+    metadata_markers <- colnames(metadata)
+    common_markers <- intersect(toclassify_markers, metadata_markers)
+    
+    if (length(common_markers) == 0) {
+      stop("❌ No common markers found between the prediction file and the metadata.")
+    }
+    
+    metadata_common <- metadata[, common_markers, drop = FALSE]
+    lod_row <- metadata[2, common_markers, drop = FALSE]
+    mst_row <- metadata[3, common_markers, drop = FALSE]
+    
+    mst_flags <- suppressWarnings(as.numeric(mst_row))
+    valid_mst <- which(mst_flags == 1)
+    
+    selected_cols <- if (length(valid_mst) > 0) {
+      colnames(mst_row)[valid_mst]
+    } else {
+      common_markers
+    }
+    
+    thresholds <- lod_row[, selected_cols, drop = FALSE]
+    return(thresholds)
+  }
+  
+  # Evento para predecir
+  observeEvent(input$predictData, {
+    req(input$predictFile)
+    req(model_h2o())
+    
+    has_reduced <- !is.null(model_reduced())
+    
+    if (has_reduced) {
+      showModal(
+        modalDialog(
+          title = "Choose model for prediction",
+          "Do you want to use the reduced model or the full model for prediction?",
+          footer = tagList(
+            actionButton("useFull", "Full model"),
+            actionButton("useReduced", "Reduced model")
+          ),
+          easyClose = TRUE
+        )
+      )
+    } else {
+      do_prediction(use_reduced = FALSE)
+    }
+  })
+  
+  observeEvent(input$useReduced, {
+    removeModal()
+    
+    # Preprocesar LOD solo si hay predictFile
+    if (!is.null(input$predictFile)) {
+      toclassify <- import_data(input$predictFile$datapath)
+      
+      # Obtener metadata
+      if (!is.null(input$archivo)) {
+        metadata <- import_data(input$archivo$datapath)
+        metadata <- metadata[c(1, 2, 3), -1]
+      } else {
+        augmented <- augmentedData()
+        metadata <- augmented[c(1, 2, 3), -1]
+      }
+      
+      # Obtener predictores desde el modelo reducido
+      predictors <- reduced_predictors()
+      
+      # Calcular LOD solo con los predictores reducidos
+      lod_result <- LOD_detection(
+        thresholds_df = metadata[2, predictors, drop = FALSE],
+        classify = toclassify
+      )
+      
+      # Guardar resultado
+      lod_zeros_infogram(lod_result)
+    }
+    
+    # Ejecutar predicción
+    do_prediction(use_reduced = TRUE)
+  })
+  
+  
+  
+  observeEvent(input$useFull, {
+    removeModal()
+    do_prediction(use_reduced = FALSE)
+  })
+  
+  # Función para seleccionar el modelo
+  get_prediction_model <- function(use_reduced) {
+    if (use_reduced && !is.null(model_reduced())) {
+      model_reduced()
+    } else {
+      model_h2o()
+    }
+  }
+  
+  # Función principal de predicción
+  do_prediction <- function(use_reduced) {
+    tryCatch({
+      # 1. Cargar datos
+      toclassify <- import_data(input$predictFile$datapath)
+      if (!is.null(input$archivo)) {
+        metadata <- import_data(input$archivo$datapath)
+        metadata <- metadata[c(1, 2, 3), -1]
+      } else {
+        augmented <- augmentedData()
+        validate(
+          need(nrow(augmented) >= 3, "❌ augmentedData() must have at least 3 rows.")
+        )
+        metadata <- augmented[c(1, 2, 3), -1]
+      }
+      
+      # 2. Cálculo de LOD
+      lod_zeros <- if (use_reduced) {
+        req(lod_zeros_infogram())
+        lod_zeros_infogram()
+      } else {
+        thresholds_for_lod <- get_lod_thresholds(metadata, toclassify)
+        LOD_detection(thresholds_df = thresholds_for_lod, classify = toclassify)
+      }
+      
+      # 3. Alertas de riesgo
+      if (any(lod_zeros$LOD == 100, na.rm = TRUE)) {
+        shinyalert::shinyalert(
+          title = "⚠️ Risk of Misclassification",
+          text = paste0(
+            "The following samples have ALL their MST markers below the LOD:\n",
+            paste(lod_zeros$ID[which(lod_zeros$LOD == 100)], collapse = ", ")
+          ),
+          type = "warning"
+        )
+      }
+      
+      if (any(lod_zeros$Zeros == 100, na.rm = TRUE)) {
+        shinyalert::shinyalert(
+          title = "❗️ High Risk of Misclassification",
+          text = paste0(
+            "The following samples have ALL their MST markers with zero values:\n",
+            paste(lod_zeros$ID[which(lod_zeros$Zeros == 100)], collapse = ", ")
+          ),
+          type = "error"
+        )
+      }
+      
+      # 4. Predicción
+      raw_model <- get_prediction_model(use_reduced)
+      model_to_use <- if (inherits(raw_model, "H2OAutoML")) raw_model@leader else raw_model
+      
+      # Determinar las variables que el modelo espera
+      model_vars <- model_to_use@parameters$x
+      
+      # Asegurarse de que todas las columnas están presentes
+      missing_vars <- setdiff(model_vars, colnames(toclassify))
+      if (length(missing_vars) > 0) {
+        for (var in missing_vars) {
+          toclassify[[var]] <- NA
+        }
+      }
+      
+      # Reordenar para que coincidan con el orden del modelo
+      data_for_prediction <- toclassify[, model_vars, drop = FALSE]
+      
+      
+      toclassify_h2o <- as.h2o(data_for_prediction)
+      pred <- h2o.predict(model_to_use, toclassify_h2o)
+      
+      df_pred <- if (ncol(toclassify) > 1) {
+        cbind(ID = toclassify[[1]], as.data.frame(pred))
+      } else {
+        as.data.frame(pred)
+      }
+      
+      # 5. Combinar resultados
+      lod_zeros$LOD <- round(lod_zeros$LOD, 2)
+      lod_zeros$Zeros <- round(lod_zeros$Zeros, 2)
+      final_df <- merge(df_pred, lod_zeros, by = "ID", all.x = TRUE)
+      predictions(final_df)
+      
+      # 6. Mostrar resultados
+      output$predictions <- DT::renderDT({
+        req(final_df)
+        df_rounded <- final_df
+        pred_num_cols <- sapply(df_rounded, is.numeric) & !(names(df_rounded) %in% c("LOD", "Zeros", "ID"))
+        df_rounded[pred_num_cols] <- lapply(df_rounded[pred_num_cols], function(x) round(x, 2))
+        
+        df_rounded$row_color <- NA
+        df_rounded$row_color[df_rounded$Zeros == 100 & df_rounded$LOD == 100] <- "red"
+        df_rounded$row_color[df_rounded$Zeros == 100 & df_rounded$LOD != 100] <- "yellow"
+        df_rounded$row_color[df_rounded$Zeros != 100 & df_rounded$LOD == 100] <- "yellow"
+        
+        row_color_col_idx <- which(names(df_rounded) == "row_color") - 1
+        
+        datatable <- DT::datatable(
+          df_rounded,
+          options = list(
+            scrollX = TRUE,
+            pageLength = 10,
+            lengthMenu = c(10, 25, 50, 100),
+            columnDefs = list(list(targets = row_color_col_idx, visible = FALSE))
+          ),
+          rownames = FALSE
+        )
+        
+        if (!all(is.na(df_rounded$row_color))) {
+          datatable <- datatable %>%
+            DT::formatStyle(
+              columns = 1,
+              target = "row",
+              backgroundColor = DT::styleEqual(c("yellow", "red"), c("yellow", "red")),
+              valueColumns = "row_color"
+            )
+        }
+        
+        datatable
+      })
+      
+      # 7. Descarga
+      output$downloadPredictions <- downloadHandler(
+        filename = function() {
+          "predictions_with_risk_analysis.xlsx"
+        },
+        content = function(file) {
+          df_to_download <- if ("row_color" %in% names(final_df)) {
+            final_df %>% dplyr::select(-row_color)
+          } else {
+            final_df
+          }
+          save_data(df_to_download, file)
+        }
+      )
+      
+      # 8. Notificación final
+      showNotification(
+        if (use_reduced) "✅ Prediction completed using the reduced model." else "✅ Prediction completed using the full model.",
+        type = "message"
+      )
+      
+      shinyalert::shinyalert(
+        title = "Prediction Complete",
+        text = "<strong>The prediction was successful.</strong><br><br>You can adjust these results using <em>T90 decay times</em> in the corresponding tab if you wish.",
+        type = "success",
+        html = TRUE
+      )
+    }, error = function(e) {
+      showNotification(paste("❌ Prediction error:", e$message), type = "error")
+      shinyalert::shinyalert("Error", paste("An error occurred:", e$message), type = "error")
+    })
+  }
+  
+  
+  
+  
+  # Observer to abrir modal de simulación con T90
+  observeEvent(input$simulateT90, {
+    req(input$t90File)
+    
+    showModal(modalDialog(
+      title = tags$div(style = "font-weight:bold; font-size:18px;", "Simulation Time"),
+      numericInput(
+        "userT90Time",
+        tags$label(HTML("<strong>Enter the residence time</strong> <em>(same unit as T90)</em>:")),
+        value = 24,
+        min = 0.1,
+        step = 0.1
+      ),
+      footer = tagList(
+        modalButton("Cancel"),
+        actionButton("confirmT90Time", "Accept", class = "btn btn-primary")
+      ),
+      easyClose = FALSE
+    ))
+    
+    
+  })
+  
+  predictionsT90 <- reactiveVal()
+  
+  # Observer para realizar la simulación una vez ingresado el tiempo
+  observeEvent(input$confirmT90Time, {
+    removeModal()
+    req(input$t90File, input$predictFile, input$userT90Time)
+    
+    tryCatch({
+      # Importar dataset base desde input$predictFile
+      toclassify_temp <- import_data(input$predictFile$datapath)
+      
+      # Importar archivo T90
+      t90_data <- import_data(input$t90File$datapath)
+      if (nrow(t90_data) != 1) {
+        showNotification("The T90 file must contain only one row with T90 values per variable.", type = "error")
+        return()
+      }
+      
+      t90_time <- as.numeric(input$userT90Time)
+      
+      t90_vars <- names(t90_data)
+      
+      # Aplicar corrección para variables comunes
+      for (var in t90_vars) {
+        if (var %in% names(toclassify_temp)) {
+          x <- as.numeric(toclassify_temp[[var]])
+          t90 <- as.numeric(t90_data[[1, var]])
+          toclassify_temp[[var]] <- x / 10^(-t90_time / t90)
+        }
+      }
+      
+      simulatedData(toclassify_temp)
+      
+      # Render simulated data table
+      output$simulatedData <- DT::renderDT({
+        req(simulatedData())
+        df_rounded <- simulatedData()
+        num_cols <- sapply(df_rounded, is.numeric)
+        df_rounded[num_cols] <- lapply(df_rounded[num_cols], function(x) round(x, 2))
+        
+        DT::datatable(
+          df_rounded,
+          options = list(
+            scrollX = TRUE,
+            pageLength = 10,
+            lengthMenu = c(10, 25, 50, 100)
+          ),
+          rownames = FALSE
+        )
+      })
+      output$downloadT90Results <- downloadHandler(
+        filename = function() {
+          paste0("simulated_t90_", Sys.Date(), ".xlsx")
+        },
+        content = function(file) {
+          save_data(toclassify_temp, file)
+        }
+      )
+      
+      # Now decide which model to use
+      
+      has_reduced <- !is.null(model_reduced())
+      
+      if (has_reduced) {
+        # Show modal to choose model
+        showModal(modalDialog(
+          title = "Choose model for T90 prediction",
+          "Do you want to use the reduced model or the full model for prediction?",
+          footer = tagList(
+            actionButton("useFullT90", "Full model"),
+            actionButton("useReducedT90", "Reduced model")
+          ),
+          easyClose = TRUE
+        ))
+        
+        # Save the data to a reactiveVal so it can be used later
+        simulatedDataForPrediction(toclassify_temp)
+        
+      } else {
+        # Only full model available, predict now
+        do_prediction_t90(toclassify_temp, use_reduced = FALSE)
+      }
+      
+    }, error = function(e) {
+      showNotification(paste("Error in T90 simulation:", e$message), type = "error")
+    })
+  })
+  
+  # ReactiveVal to hold data for prediction after modal choice
+  simulatedDataForPrediction <- reactiveVal()
+  
+  # When user chooses reduced model
+  observeEvent(input$useReducedT90, {
+    removeModal()
+    req(simulatedDataForPrediction())
+    do_prediction_t90(simulatedDataForPrediction(), use_reduced = TRUE)
+  })
+  
+  # When user chooses full model
+  observeEvent(input$useFullT90, {
+    removeModal()
+    req(simulatedDataForPrediction())
+    do_prediction_t90(simulatedDataForPrediction(), use_reduced = FALSE)
+  })
+  
+  # Prediction function for T90 simulation
+  do_prediction_t90 <- function(toclassify_temp, use_reduced) {
+    tryCatch({
+      req(model_h2o())
+      model_to_use <- if (use_reduced && !is.null(model_reduced())) {
+        model_reduced()
+      } else {
+        model_h2o()
+      }
+      
+      if (ncol(toclassify_temp) > 1) {
+        data_for_prediction <- toclassify_temp[, -1, drop = FALSE]
+      } else {
+        data_for_prediction <- toclassify_temp
+      }
+      
+      toclassify_h2o <- as.h2o(data_for_prediction)
+      pred_t90 <- h2o.predict(model_to_use, toclassify_h2o)
+      
+      df_pred_t90 <- if (ncol(toclassify_temp) > 1) {
+        cbind(ID = toclassify_temp[[1]], as.data.frame(pred_t90))
+      } else {
+        as.data.frame(pred_t90)
+      }
+      
+      predictionsT90(df_pred_t90)
+      
+      output$predictionsT90 <- DT::renderDT({
+        req(df_pred_t90)
+        df_rounded <- df_pred_t90
+        num_cols <- sapply(df_rounded, is.numeric)
+        df_rounded[num_cols] <- lapply(df_rounded[num_cols], function(x) round(x, 2))
+        
+        DT::datatable(
+          df_rounded,
+          options = list(
+            scrollX = TRUE,
+            pageLength = 10,
+            lengthMenu = c(10, 25, 50, 100)
+          ),
+          rownames = FALSE
+        )
+      })
+      
+      output$downloadPredictionsT90 <- downloadHandler(
+        filename = function() {
+          paste0("predictions_t90_", Sys.Date(), ".xlsx")
+        },
+        content = function(file) {
+          save_data(df_pred_t90, file)
+        }
+      )
+      
+      
+      showNotification(
+        if (use_reduced) "✅ Prediction completed using the reduced model." else "✅ Prediction completed using the full model.",
+        type = "message"
+      )
+      # Show success alert
+      shinyalert::shinyalert(
+        title = "Workflow Complete",
+        text = HTML("The <strong>T90-based simulation</strong> has been successfully completed.<br><br>You can now proceed to the next tab to download the <em>full analysis report</em>."),
+        type = "success",
+        html = TRUE
+      )
+    }, error = function(e) {
+      showNotification(paste("Prediction error:", e$message), type = "error")
+    })
+  }
+  
+  
+  
+  # Observer para guardar los datos simulados
+  observeEvent(input$confirmSaveT90, {
+    removeModal()
+    req(simulatedData(), input$saveT90Format)
+    
+    
+    showNotification("T90 corrected data has been generated and is ready for download.", type = "message")
+  })
+  
+  shiny::addResourcePath("temp_reports", tempdir())
+  # Expón la carpeta tempdir() con alias "temp_reports"
+  observeEvent(input$generateReport, {
+    output_file <- file.path(tempdir(), "Report_Ichnea_MST.html")
+    
+    withProgress(message = 'Generating report, please wait...', value = 0, {
+      # Subir progresivamente hasta 40% lentamente
+      for (i in seq(0, 0.4, by = 0.02)) {
+        incProgress(0.02)
+        Sys.sleep(0.15)  
+      }
+      
+      # Renderizar el reporte (esto puede tomar tiempo real)
+      rmarkdown::render(
+        input = "code/Informe.Rmd",
+        output_file = output_file,
+        params = list(
+          metadata = metadata(),
+          augmented_data = augmentedData(),
+          predictions = predictions(),
+          simulated_data = simulatedData(),
+          ratios = ratiosData(),
+          model_reduced = model_reduced(),
+          shap_list_infogram = shap_list_infogram(),
+          test_data_list_infogram = test_data_list_infogram(),
+          models_list_infogram = models_list_infogram(),
+          model_h2o = model_h2o(),
+          chosenClass = chosenClass(),
+          models_list = models_list(),
+          shap_list = shap_list(),
+          test_data_list = test_data_list(),
+          predictionsT90 = predictionsT90()
+        ),
+        envir = new.env(parent = globalenv()),
+        output_format = "html_document"
+      )
+      
+      # Subir lentamente hasta 100%
+      for (i in seq(0.4, 1, by = 0.02)) {
+        incProgress(0.02)
+        Sys.sleep(0.1)  # También lento
+      }
+    })
+    
+    output$reportPreview <- renderUI({
+      req(file.exists(output_file))
+      tags$iframe(
+        src = file.path("temp_reports", "Report_Ichnea_MST.html"),
+        style = "width:100%; height:600px;",
+        frameborder = 0
+      )
+    })
+    
+    output$downloadReportHTML <- downloadHandler(
+      filename = function() { "Report_Ichnea_MST.html" },
+      content = function(file) {
+        file.copy(output_file, file)
+      }
+    )
+  })
+  
+}   
+
+
+
+
+

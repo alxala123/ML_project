@@ -1,0 +1,701 @@
+---
+title: "Report of Ichnaea MST procedure"
+author: "Ichnaea MST"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    number_sections: true
+    theme: united
+    code_folding: hide
+params:
+  metadata: NULL
+  augmented_data: NULL
+  predictions: NULL
+  simulated_data: NULL
+  ratios: NULL
+  model_reduced: NULL
+  shap_list_infogram: NULL
+  test_data_list_infogram: NULL
+  models_list_infogram: NULL
+  model_h2o: NULL
+  chosenClass: NULL
+  models_list: NULL
+  shap_list: NULL
+  test_data_list: NULL
+  predictionsT90: NULL
+header-includes:
+  - \usepackage{fancyhdr}
+  - \pagestyle{fancy}
+  - \fancyhf{}
+  - \rfoot{\thepage}
+  - \renewcommand{\headrulewidth}{0pt}
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE)
+library(ggplot2)
+library(DataExplorer)
+library(knitr)
+library(kableExtra)
+library(DT)
+library(patchwork)
+library(RColorBrewer)
+library(h2o)
+library(dplyr)
+library(tidyr)
+library(gridExtra)
+library(grid)
+library(caret)
+library(multiROC)
+```
+
+Ichnaea MST is a set of R scripts designed for training and classification using the H2O machine learning framework, specifically H2O AutoML. This tool automates model creation and tuning, allowing users to train multiple models and select the best one without manual intervention. It also handles data preprocessing, such as scaling, centering, and encoding categorical variables. Developed for novice users, Ichnaea MST aims to help the microbiology community explore machine learning in Microbial Source Tracking (MST) scenarios. Users can access the software locally via an R Notebook or remotely through a web-based GUI under a Shiny application.
+
+# Initial Data
+
+This section includes libraries for data file manipulation and the DataExplorer library for creating descriptive statistics.
+
+## 📋 **Preview of the data**  
+```{r tabla-metadata}
+if (is.null(params$metadata)) {
+  message("⚠️ No se ha proporcionado metadata. No se puede mostrar la tabla de datos redondeados.")
+} else {
+  df_rounded <- params$metadata
+  df_rounded[, -1] <- lapply(df_rounded[, -1], function(x) round(x, 2))
+  
+  DT::datatable(df_rounded,
+    options = list(
+      scrollX = TRUE,
+      pageLength = 10,
+      lengthMenu = c(10, 25, 50, 100)
+    ),
+    rownames = FALSE
+  )
+}
+
+``` 
+
+## Boxplots 
+
+The program uses MST markers without logarithm conversions, displaying selected parameters in the training dataset using boxplots. Elevated values of MST markers, especially microbial parameters, in contamination sources are converted to log10 for easier interpretation and comparison. Keep this in mind when interpreting the boxplots.
+
+```{r}
+if (is.null(params$metadata)) {
+  message("⚠️ No se ha proporcionado metadata. No se pueden generar los boxplots por clase.")
+} else {
+  df <- params$metadata
+  
+  df$Class <- factor(df$Class, levels = unique(df$Class))
+  
+  num_cols <- colnames(df)[colnames(df) != "Class"]
+  n_classes <- length(levels(df$Class))
+  
+  colores <- RColorBrewer::brewer.pal(min(n_classes, 8), "Set2")
+  if(n_classes > 8){
+    colores <- colorRampPalette(colores)(n_classes)
+  }
+  
+  plot_list <- lapply(num_cols, function(col) {
+    ggplot(df, aes(x = .data[[col]], y = Class, fill = Class)) +  # invertidos x y
+      geom_boxplot(outlier.size = 1, alpha = 0.8) +
+      scale_fill_manual(values = colores) +
+      labs(title = paste("Boxplot of", col, "by Class"),
+           x = col, y = "Class") +
+      theme_minimal(base_size = 12) +
+      theme(
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "none",
+        plot.title = element_text(face = "bold", size = 14)
+      )
+  })
+  
+  # Mostrar los plots 2 por fila
+  plot_groups <- split(plot_list, ceiling(seq_along(plot_list)/2))
+  
+  for (group in plot_groups) {
+    grid.arrange(grobs = group, ncol = 2)
+  }
+}
+
+```
+
+
+# Data Augmentation
+
+This section explains the data augmentation process, which is essential for machine learning classification. Ichnaea-MST uses resampling techniques and simulated dilution to create artificial samples, enriching the dataset. Quantitative markers, assumed to follow a Poisson distribution, show greater variability after simulated dilution. Qualitative samples are directly subjected to dilution.
+
+Detection of MST markers depends on whether values are above or below detection limits for quantitative samples, or detection thresholds for qualitative samples. After resampling, samples are added to the original dataset, repeating the process as needed based on the complexity of the training dataset. The number of samples required depends on the number of MST markers and classes to be classified.
+
+This section outlines the functions for the two types of data augmentation in Ichnaea-MST.
+
+##  **Preview of the augemented data**  
+```{r augmented-table, echo=FALSE, message=FALSE, warning=FALSE}
+if (is.null(params$augmented_data)) {
+  message("⚠️ No se ha proporcionado augmented_data. No se puede generar la tabla de datos aumentados.")
+} else {
+  df_rounded <- params$augmented_data
+  df_rounded[, -1] <- lapply(df_rounded[, -1], function(x) round(x, 2))
+  
+  DT::datatable(df_rounded,
+    options = list(
+      scrollX = TRUE,       # scroll horizontal activado
+      pageLength = 10,      # filas por página
+      lengthMenu = c(10, 25, 50, 100)  # opciones de filas a mostrar
+    ),
+    rownames = FALSE
+  )
+}
+
+```
+
+## Boxplots  
+```{r}
+if (is.null(params$augmented_data) || is.null(params$metadata)) {
+  message("⚠️ Faltan datos necesarios (augmented_data o metadata). Esta sección no se generará.")
+} else {
+  metadata_val <- params$metadata
+  data_plot <- metadata_val[-c(1, 2, 3), ]
+  names(data_plot)[1] <- "Class"
+  data_plot$Class <- as.factor(data_plot$Class)
+  
+  quantitatives <- which(sapply(data_plot, is.numeric))
+  
+  data3 <- params$augmented_data
+  data3$Class <- as.factor(data3$Class)
+  
+  df <- cbind(Class = data3$Class, data3[quantitatives] + 1)
+  df2 <- log10(df[, -1] + 1)
+  df2$Class <- df$Class
+  
+  num_cols <- setdiff(names(df2), "Class")
+  classes <- unique(df2$Class)
+  n_classes <- length(classes)
+  
+  colores_base <- c(
+    "#66c2a5", "#fc8d62", "#8da0cb", "#e78ac3",
+    "#a6d854", "#ffd92f", "#e5c494", "#b3b3b3"
+  )
+  colores <- setNames(colores_base[seq_along(classes)], classes)
+  
+  plot_list <- lapply(num_cols, function(col) {
+    ggplot(df2, aes(x = .data[[col]], y = Class, fill = Class)) +
+      geom_boxplot(outlier.size = 1, alpha = 0.8) +
+      scale_fill_manual(values = colores) +
+      labs(title = paste("Boxplot of", col, "by Class"),
+           x = col, y = "Class") +
+      theme_minimal(base_size = 12) +
+      theme(
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "none",
+        plot.title = element_text(face = "bold", size = 14)
+      )
+  })
+  
+  plot_groups <- split(plot_list, ceiling(seq_along(plot_list)/2))
+  
+  for (group in plot_groups) {
+    grid.arrange(grobs = group, ncol = 2)
+  }
+}
+
+```
+
+# Ratio Calculation
+
+```{r}
+if (is.null(params$ratios)) {
+  cat("⚠️ No ratios provided to display.\n")
+} else {
+  df_rounded <- params$ratios
+  df_rounded[, -1] <- lapply(df_rounded[, -1], function(x) round(x, 2))
+
+  DT::datatable(df_rounded, 
+                options = list(
+                  scrollX = TRUE,
+                  pageLength = 10,
+                  lengthMenu = c(10, 25, 50, 100)
+                ),
+                rownames = FALSE)
+}
+
+
+```
+
+# Machine learning
+
+Machine learning can be categorized into three types: **supervised learning**, **unsupervised learning**, and **reinforcement learning**. MST classification falls under supervised learning, as it involves training an algorithm on labeled data. This process includes categorizing contamination types into classes like human, non-human, poultry, bovine, equine, etc., or as a percentage of a specific contamination type. The first categorization is a classification problem, while the second is a regression problem.
+
+H2O AutoML uses various supervised learning algorithms for classification and regression tasks, including:
+
+- **Generalized Linear Models (GLM)**
+- **Gradient Boosting Machine (GBM)**
+- **Distributed Random Forest (DRF)**
+- **Deep Learning (Neural Networks)**
+- **eXtreme Gradient Boosting (XGBoost)**
+- **Stacked Ensembles**
+
+Each algorithm has its strengths. The training process is computationally demanding, with Deep Learning, XGBoost, and Stacked Ensembles being the most demanding, and GLM the least. Tree-based models (DRF, GBM, and XGBoost) are optimal for interpreting training outcomes. H2O AutoML trains multiple model types, automatically tuning and evaluating them to find the best model for a dataset.
+
+GBM is the default option for training due to its optimized implementation by H2O.
+
+Machine learning is a probabilistic process, meaning results can vary even with the same augmented dataset. Factors like random initialization, training and validation dataset creation, and hyperparameter tuning can influence model selection. It's crucial to consider multiple runs and evaluations to ensure robust and reliable model performance.
+
+## Metrics of the training process for the validation dataset
+As in the previous section, this section shows the classification performance metrics and the confusion matrix for the validation dataset.
+
+```{r}
+if (is.null(params$model_h2o)) {
+  message("⚠️ No se ha proporcionado el modelo de H2O (params$model_h2o). Esta sección del informe no se puede generar.")
+} else {
+  best_model <- params$model_h2o@leader
+  model_perf <- h2o.performance(best_model)
+
+  print(h2o.confusionMatrix(model_perf))
+
+  if (!is.null(best_model@model$scoring_history) && nrow(best_model@model$scoring_history) > 1) {
+    h2o.learning_curve_plot(best_model)
+  } else {
+    message("⚠️ No se encontró historial de entrenamiento para graficar la curva de aprendizaje.")
+  }
+  
+  h2o.varimp_plot(best_model)
+}
+```
+
+## Metrics of the training process for the validation dataset (ROC)
+
+In order to evaluate the performance of the multinomial classification model, both micro-average and macro-average ROC curves are computed, along with their corresponding AUC values. The micro-average ROC/AUC is derived by aggregating the contributions of all classes into a single binary classification task. This is achieved by stacking all true positive, false positive, true negative, and false negative outcomes across all classes, and treating these values as a large binary classification. Conversely, the macro-average ROC/AUC is calculated by first computing individual ROC curves for each class using a one-vs-rest approach, where each class is designated as the positive class while the others are designated as the negative class. The results from all classes are then averaged to produce a single summary curve. In order to ensure smoothness and comparability across classes, linear interpolation was applied between the ROC points prior to the implementation of the averaging process.
+
+```{r}
+if (is.null(params$model_h2o)) {
+  message("⚠️ No se ha proporcionado el modelo de H2O (params$model_h2o). No se puede generar el análisis de rendimiento.")
+} else {
+  # Cargar datos y convertir la clase a factor
+  df_aug <- params$augmented_data
+  df_aug$Class <- as.factor(df_aug$Class)
+  df_aug <- df_aug[, c(setdiff(names(df_aug), "Class"), "Class")]  # Clase al final
+
+  # Partición 70/30 reproducible
+  set.seed(123)
+  inTrain <- caret::createDataPartition(y = df_aug$Class, p = 0.7, list = FALSE)
+  training <- df_aug[inTrain, ]
+  validation <- df_aug[-inTrain, ]
+
+  # Convertir a H2O
+  train_set <- as.h2o(training)
+  validation_set <- as.h2o(validation)
+
+  # Extraer modelo entrenado y evaluar
+  best_model <- params$model_h2o@leader
+  model_performance <- h2o.performance(best_model, validation_set)
+
+  if (length(unique(df_aug$Class)) == 2) {
+    # Clasificación binaria: usar plot() base de H2O
+    plot(model_performance, type = "roc")
+
+  } else {
+    # Clasificación multiclase
+    library(ggplot2)
+    library(multiROC)
+
+    predictions <- h2o.predict(best_model, validation_set)
+
+    y_true <- as.vector(validation$Class)  # Usar el data.frame original
+    y_probs <- as.data.frame(predictions)[, -1]  # Quitar columna de clase predicha
+
+    class_names <- colnames(y_probs)
+    y_true <- factor(y_true, levels = class_names)
+
+    # Codificación one-hot manual
+    true_df <- as.data.frame(sapply(class_names, function(cl) as.integer(y_true == cl)))
+    colnames(true_df) <- paste0(class_names, "_true")
+    colnames(y_probs) <- paste0(class_names, "_pred_m1")
+
+    multi_df <- cbind(true_df, y_probs)
+
+    roc_res <- multi_roc(multi_df, force_diag = TRUE)
+    plot_df <- plot_roc_data(roc_res)
+
+    annotation_df <- data.frame(
+      Group = c(class_names, "Macro", "Micro"),
+      AUC = as.numeric(unlist(roc_res$AUC))
+    )
+
+    ggplot(plot_df, aes(x = 1 - Specificity, y = Sensitivity)) +
+      geom_path(aes(color = Group), size = 1.2) +
+      facet_wrap(~ Group, scales = "fixed") +
+      labs(title = "Multiclass ROC Curves (multiROC)",
+           x = "1 - Specificity", y = "Sensitivity") +
+      theme_minimal(base_size = 14) +
+      theme(
+        plot.title = element_text(size = 18, face = 'bold'),
+        axis.title = element_text(size = 16),
+        axis.text.x = element_text(size = 14, angle = 90),
+        axis.text.y = element_text(size = 14),
+        legend.position = "bottom",
+        strip.text = element_text(size = 16, face = 'bold')
+      ) +
+      geom_text(data = annotation_df,
+                aes(x = 0.6, y = 0.2, label = sprintf("AUC = %.4f", AUC)),
+                size = 5, color = "black")
+  }
+}
+
+
+```
+
+## Plots associated to automl best model
+This section presents graphs explaining the optimal auto machine learning model selected during training. 
+
+For binary classifiers, SHAP (Sparse Gradients for Accurate Predictions) plots show the relationships between features and predicted outcomes. SHAP plots assign importance scores to each feature, indicating their contribution to the final prediction:
+
+- **Positive SHAP values**: Elevate predictions
+- **Negative SHAP values**: Lower predictions
+
+Effective MST markers in binary classification are those with well-separated points (red and blue) on the SHAP plot. If points are closer together, the MST marker is less effective at distinguishing between the two classes. SHAP plots are available for tree-based binomial models.
+
+Another method to identify effective MST parameters is the importance plot, which shows the relative importance of each feature in a trained model. This helps identify features that most influence the model's predictions.
+
+Note: Stacked Ensemble models do not include a variable importance plot due to their complexity.
+
+```{r}
+shap_vals <- params$shap_list
+models_bin <- params$models_list
+test_dfs <- params$test_data_list
+
+if (is.null(shap_vals) || is.null(models_bin) || is.null(test_dfs)) {
+  message("⚠️ No se encontraron modelos binarios o valores SHAP. Esta sección no se generará.")
+} else {
+  for (cls in names(shap_vals)) {
+
+    shap_df <- shap_vals[[cls]]
+    test_df <- test_dfs[[cls]]
+
+    if (is.null(test_df)) next
+
+    shap_long <- shap_df %>%
+      pivot_longer(-ID, names_to = "Feature", values_to = "SHAP") %>%
+      filter(Feature != "BiasTerm") %>%
+      left_join(
+        test_df %>%
+          mutate(ID = 1:nrow(.)) %>%
+          pivot_longer(-c(ID, Class), names_to = "Feature", values_to = "value"),
+        by = c("ID", "Feature")
+      ) %>%
+      group_by(Feature) %>%
+      mutate(norm_value = (value - min(value, na.rm = TRUE)) / (max(value, na.rm = TRUE) - min(value, na.rm = TRUE))) %>%
+      ungroup()
+
+    top_features <- shap_long %>%
+      group_by(Feature) %>%
+      summarise(mean_abs = mean(abs(SHAP)), .groups = "drop") %>%
+      arrange(desc(mean_abs)) %>%
+      slice_head(n = 10) %>%
+      pull(Feature)
+
+    shap_top <- filter(shap_long, Feature %in% top_features)
+    shap_top$Feature <- factor(shap_top$Feature, levels = rev(top_features))
+
+    class_labels <- unique(test_df$Class)
+    plot_title <- paste0(class_labels[1], " vs ", class_labels[2])
+
+    p <- ggplot(shap_top, aes(x = SHAP, y = Feature, color = Class)) +
+      geom_point(aes(size = norm_value), alpha = 0.6) +
+      geom_vline(xintercept = 0, linetype = "dashed") +
+      labs(
+        title = plot_title,
+        x = "SHAP Contribution",
+        y = "Feature",
+        color = "Class",
+        size = "Normalized\nValue"
+      ) +
+      scale_color_manual(values = c("#1f78b4", "#e31a1c")) +
+      theme_minimal(base_size = 14) +
+      theme(
+        legend.position = "right",
+        plot.title = element_text(face = "bold", size = 14, hjust = 0.5),
+        axis.title = element_text(face = "bold")
+      )
+
+    print(p)
+  }
+}
+
+```
+
+
+#  Theoretical model optimisation
+
+H2O Infogram is a graphical tool designed to identify the most valuable and unique features driving the response in supervised classification problems. It plots variables on a two-dimensional grid of total versus net information:
+- **X-axis**: Predictive power
+- **Y-axis**: Uniqueness of each variable
+
+The infogram generates a graph with a reduced set of MST markers, helping users enhance model efficiency by reducing the number of necessary MST markers.
+
+The script uses three distinct datasets:
+- **Training**: 60% of the samples, used to calibrate the model's parameters.
+- **Validation**: 20% of the samples, used to evaluate the model's performance, fine-tune hyperparameters, and prevent overfitting.
+- **Testing**: 20% of the samples, reserved for final evaluation (performance metrics, confusion matrix, and associated plots).
+
+In this section, users can select the option to reduce MST markers, emphasizing which class needs better identification.
+
+## Metrics of the training process for the validation dataset
+```{r}
+if (is.null(params$model_reduced)) {
+  message("⚠️ No se encontró el modelo reducido (params$model_reduced). Esta sección no se generará.")
+} else {
+  best_model_reduced <- params$model_reduced@leader
+  model_perf <- h2o.performance(best_model_reduced)
+
+  print(h2o.confusionMatrix(model_perf))
+
+  h2o.learning_curve_plot(best_model_reduced)
+
+  h2o.varimp_plot(best_model_reduced)
+}
+
+```
+ 
+## Metrics of the training process for the validation dataset (ROC)
+```{r}
+if (is.null(params$model_reduced)) {
+  message("⚠️ No se encontró el modelo reducido (params$model_reduced). Esta sección no se generará.")
+} else {
+  # Cargar datos y convertir la clase a factor
+  df_aug <- params$augmented_data
+  df_aug$Class <- as.factor(df_aug$Class)
+  df_aug <- df_aug[, c(setdiff(names(df_aug), "Class"), "Class")]  # Clase al final
+
+  # Partición 70/30 reproducible
+  set.seed(123)
+  inTrain <- caret::createDataPartition(y = df_aug$Class, p = 0.7, list = FALSE)
+  training <- df_aug[inTrain, ]
+  validation <- df_aug[-inTrain, ]
+
+  # Convertir a H2O
+  train_set <- as.h2o(training)
+  validation_set <- as.h2o(validation)
+
+  # Extraer modelo entrenado y evaluar
+  best_model <- params$model_reduced@leader
+  model_performance <- h2o.performance(best_model, validation_set)
+
+  if (length(unique(df_aug$Class)) == 2) {
+    # Clasificación binaria: usar plot() base de H2O
+    plot(model_performance, type = "roc")
+
+  } else {
+
+    predictions <- h2o.predict(best_model, validation_set)
+
+    y_true <- as.vector(validation$Class)  # Usar el data.frame original
+    y_probs <- as.data.frame(predictions)[, -1]  # Quitar columna de clase predicha
+
+    class_names <- colnames(y_probs)
+    y_true <- factor(y_true, levels = class_names)
+
+    # Codificación one-hot manual
+    true_df <- as.data.frame(sapply(class_names, function(cl) as.integer(y_true == cl)))
+    colnames(true_df) <- paste0(class_names, "_true")
+    colnames(y_probs) <- paste0(class_names, "_pred_m1")
+
+    multi_df <- cbind(true_df, y_probs)
+
+    roc_res <- multi_roc(multi_df, force_diag = TRUE)
+    plot_df <- plot_roc_data(roc_res)
+
+    annotation_df <- data.frame(
+      Group = c(class_names, "Macro", "Micro"),
+      AUC = as.numeric(unlist(roc_res$AUC))
+    )
+
+    ggplot(plot_df, aes(x = 1 - Specificity, y = Sensitivity)) +
+      geom_path(aes(color = Group), size = 1.2) +
+      facet_wrap(~ Group, scales = "fixed") +
+      labs(title = "Multiclass ROC Curves (multiROC)",
+           x = "1 - Specificity", y = "Sensitivity") +
+      theme_minimal(base_size = 14) +
+      theme(
+        plot.title = element_text(size = 18, face = 'bold'),
+        axis.title = element_text(size = 16),
+        axis.text.x = element_text(size = 14, angle = 90),
+        axis.text.y = element_text(size = 14),
+        legend.position = "bottom",
+        strip.text = element_text(size = 16, face = 'bold')
+      ) +
+      geom_text(data = annotation_df,
+                aes(x = 0.6, y = 0.2, label = sprintf("AUC = %.4f", AUC)),
+                size = 5, color = "black")
+  }
+}
+
+```
+
+## Plots associated to automl best model
+This section presents graphs explaining the optimal auto machine learning model selected during training. 
+
+For binary classifiers, SHAP (Sparse Gradients for Accurate Predictions) plots show the relationships between features and predicted outcomes. SHAP plots assign importance scores to each feature, indicating their contribution to the final prediction:
+
+- **Positive SHAP values**: Elevate predictions
+- **Negative SHAP values**: Lower predictions
+
+Effective MST markers in binary classification are those with well-separated points (red and blue) on the SHAP plot. If points are closer together, the MST marker is less effective at distinguishing between the two classes. SHAP plots are available for tree-based binomial models.
+
+Another method to identify effective MST parameters is the importance plot, which shows the relative importance of each feature in a trained model. This helps identify features that most influence the model's predictions.
+
+Note: Stacked Ensemble models do not include a variable importance plot due to their complexity.
+
+```{r}
+shap_vals <- params$shap_list_infogram
+models_bin <- params$models_list_infogram
+test_dfs <- params$test_data_list_infogram
+
+if (is.null(shap_vals) || is.null(models_bin) || is.null(test_dfs)) {
+  message("⚠️ Binary models or SHAP values not found. Esta sección no se generará.")
+} else {
+  for (cls in names(shap_vals)) {
+    shap_df <- shap_vals[[cls]]
+    test_df <- test_dfs[[cls]]
+
+    if (is.null(test_df)) next
+
+    shap_long <- shap_df %>%
+      pivot_longer(-ID, names_to = "Feature", values_to = "SHAP") %>%
+      filter(Feature != "BiasTerm") %>%
+      left_join(
+        test_df %>%
+          mutate(ID = 1:nrow(.)) %>%
+          pivot_longer(-c(ID, Class), names_to = "Feature", values_to = "value"),
+        by = c("ID", "Feature")
+      ) %>%
+      group_by(Feature) %>%
+      mutate(norm_value = (value - min(value, na.rm = TRUE)) / (max(value, na.rm = TRUE) - min(value, na.rm = TRUE))) %>%
+      ungroup()
+
+    top_features <- shap_long %>%
+      group_by(Feature) %>%
+      summarise(mean_abs = mean(abs(SHAP)), .groups = "drop") %>%
+      arrange(desc(mean_abs)) %>%
+      slice_head(n = 10) %>%
+      pull(Feature)
+
+    shap_top <- filter(shap_long, Feature %in% top_features)
+    shap_top$Feature <- factor(shap_top$Feature, levels = rev(top_features))
+
+    class_labels <- unique(test_df$Class)
+    plot_title <- paste0(class_labels[1], " vs ", class_labels[2])
+
+    p <- ggplot(shap_top, aes(x = SHAP, y = Feature, color = Class)) +
+      geom_point(aes(size = norm_value), alpha = 0.6) +
+      geom_vline(xintercept = 0, linetype = "dashed") +
+      labs(
+        title = plot_title,
+        x = "SHAP Contribution",
+        y = "Feature",
+        color = "Class",
+        size = "Normalized\nValue"
+      ) +
+      scale_color_manual(values = c("#1f78b4", "#e31a1c")) +
+      theme_minimal(base_size = 14) +
+      theme(
+        legend.position = "right",
+        plot.title = element_text(face = "bold", size = 14, hjust = 0.5),
+        axis.title = element_text(face = "bold")
+      )
+
+    print(p)
+  }
+}
+
+```
+
+# Classification
+This section initiates the classification process. Two key points to emphasize:
+
+1. **Dataset Structure**: The dataset must have the correct structure for classification. Refer to the help documentation for details.
+2. **H2O Framework**: There's no need to remove extra variables not found in the trained models (including the reduced model), so the user doesn't need to modify the original data structure.
+
+```{r}
+if (is.null(params$predictions)) {
+  message("⚠️ Predictions are missing. No se mostrará esta sección.")
+} else {
+  df_rounded <- params$predictions
+  num_cols <- sapply(df_rounded, is.numeric)
+  df_rounded[num_cols] <- lapply(df_rounded[num_cols], function(x) round(x, 2))
+  
+  DT::datatable(
+    df_rounded,
+    options = list(
+      scrollX = TRUE,
+      pageLength = 10,
+      lengthMenu = c(10, 25, 50, 100)
+    ),
+    rownames = FALSE
+  )
+}
+
+```
+
+# Natural decay (T90s)
+
+This section simulates the decay process. Samples have been classified based on the occurrence of MST markers, but the decay rate of these markers can vary due to factors like temperature, predation, sedimentation, adsorption, and other biological or physical processes. These factors affect the survival or presence of the marker in the matrix. By determining the decay rate, the previous occurrence of markers after a specific time can be predicted. It is assumed that the inactivation rate is constant, following a linear trend, determined by the t90 value of the MST marker.
+
+The steps are:
+1. **Specify Time Period**: The user specifies the time period for simulation, using the same time units as the t90 values (hours, days, weeks, etc.).
+2. **Calculate Occurrence**: The program calculates the increase in occurrence using the t90 values of the markers. This simulation applies only to quantitative variables.
+3. **Save Modified Values**: The modified values are saved in a spreadsheet, which can be edited by the user.
+
+If the user already knows the t90 values and has done the calculations, they can skip this step and proceed with the classification process. Ichnaea can use a previously trained module.
+
+The program asks if any modifications have been made to the data file. It will wait for a response before proceeding. If modifications are confirmed, the user is prompted to upload the modified data file.
+
+## Application of the natural decay
+
+```{r}
+if (is.null(params$simulated_data)) {
+  message("⚠️ T90s values are missing. No se mostrará esta sección.")
+} else {
+  df_rounded <- params$simulated_data
+  num_cols <- sapply(df_rounded, is.numeric)
+  df_rounded[num_cols] <- lapply(df_rounded[num_cols], function(x) round(x, 2))
+  
+  DT::datatable(
+    df_rounded,
+    options = list(
+      scrollX = TRUE,
+      pageLength = 10,
+      lengthMenu = c(10, 25, 50, 100)
+    ),
+    rownames = FALSE
+  )
+}
+
+```
+
+## Classification with the complet set of MST-parameters after applying the natural decay
+This section generates a data table of samples classified using a model trained with all MST markers. The user is prompted to choose the spreadsheet format for saving the results.
+
+```{r}
+if (is.null(params$predictionsT90)) {
+  message("⚠️ T90s predictions are missing. No se mostrará esta sección.")
+} else {
+  df_rounded <- params$predictionsT90
+  num_cols <- sapply(df_rounded, is.numeric)
+  df_rounded[num_cols] <- lapply(df_rounded[num_cols], function(x) round(x, 2))
+  
+  DT::datatable(
+    df_rounded,
+    options = list(
+      scrollX = TRUE,
+      pageLength = 10,
+      lengthMenu = c(10, 25, 50, 100)
+    ),
+    rownames = FALSE
+  )
+}
+
+```
